@@ -9,7 +9,7 @@
 #include <utility>
 #include <vector>
 
-#include "FarField.hpp"
+#include "farConnection.hpp"
 #include "Interaction.hpp"
 #include "Loading.hpp"
 #include "Particle.hpp"
@@ -25,8 +25,8 @@ public:
   std::vector<Interaction> Interactions;
 
   Loading *Load{nullptr};
-  FarField bottom;
-  FarField top;
+  FarConnection bottom;
+  FarConnection top;
 
   // parameters
   double t{0.0};
@@ -70,5 +70,5 @@ private:
   void screenLog();
   double getBranchShift(double xbranch, double Lperiod);
   void updateYrange();
-  void capture(FarField & field, double hmin, double hmax);
+  void capture(FarConnection & field, double hmin, double hmax);
 };

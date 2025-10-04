@@ -59,6 +59,7 @@ void SPICE::saveConf(const char *name) {
     Load->write(conf);
   } else {
     std::cout << SPICE_WARN << "Loading is not defined" << std::endl;
+    conf << "!! TO BE ADDED !!" << std::endl;
   }
 
   conf << "Particles " << Particles.size() << std::endl;
@@ -188,9 +189,15 @@ void SPICE::loadConf(const char *name) {
         conf >> token;        // next token
         continue;
       }
+      if (loadingName[0] == '!') {
+        std::cout << SPICE_WARN << "Remember to define the Loading" << std::endl;
+        getline(conf, token); // ignore the rest of the current line
+        conf >> token;        // next token
+        continue;
+      }
       Load = Loading::create(loadingName.c_str());
       if (Load == nullptr) {
-        std::cout << "Could not create the Loading" << std::endl;
+        std::cout << SPICE_WARN << "Could not create the Loading" << std::endl;
       } else {
         Load->box = this;
         Load->read(conf);
@@ -242,7 +249,7 @@ void SPICE::updateYrange() {
 
 // ---------------------------------------------------------
 // ---------------------------------------------------------
-void SPICE::capture(FarField &field, double hmin, double hmax) {
+void SPICE::capture(FarConnection &field, double hmin, double hmax) {
   field.Idx.clear();
   field.pos.clear();
   for (size_t i = 0; i < Particles.size(); i++) {

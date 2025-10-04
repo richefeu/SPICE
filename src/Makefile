@@ -18,21 +18,22 @@ $(info Cloning ToOfUs repository)
 $(shell git clone https://github.com/richefeu/toofus.git > /dev/null 2>&1)
 endif
 
-# The list of source files for the library
-SOURCES = SPICE.cpp Particle.cpp Interaction.cpp Loading.cpp
+# The list of source files for the library SPICE
+SOURCES = SPICE.cpp Particle.cpp Interaction.cpp Loading.cpp \
+          packingModel.cpp
 
 # Each cpp file listed below corresponds to an object file
 OBJECTS = $(SOURCES:%.cpp=%.o)
 
 .PHONY: all clean clone_toofus
 
-all: run see
+all: pac run see
 
 clean:
 	@echo "\033[0;32m-> Remove object files\033[0m"
 	rm -f *.o
 	@echo "\033[0;32m-> Remove compiled applications\033[0m"
-	rm -f run see
+	rm -f pac run see
 	@echo "\033[0;32m-> Remove libSPICE.a\033[0m"
 	rm -f libSPICE.a
 
@@ -54,13 +55,18 @@ libSPICE.a: $(OBJECTS)
 	@echo "\033[0;32m-> BUILDING LIBRARY" $@ "\033[0m"
 	ar rcs $@ $^
 	
+pac: pac.cpp libSPICE.a
+	@echo "\033[0;32m-> BUILDING PAC APPLICATION" $@ "\033[0m"
+	$(CXX) $(CXXFLAGS) -c $< -o pac.o
+	$(CXX) -o $@ pac.o libSPICE.a
+	
 run: run.cpp libSPICE.a
-	@echo "\033[0;32m-> BUILDING APPLICATION" $@ "\033[0m"
+	@echo "\033[0;32m-> BUILDING RUN APPLICATION" $@ "\033[0m"
 	$(CXX) $(CXXFLAGS) -c $< -o run.o
 	$(CXX) -o $@ run.o libSPICE.a
 	
 see: see.cpp libSPICE.a
-	@echo "\033[0;32m-> BUILDING APPLICATION" $@ "\033[0m"
+	@echo "\033[0;32m-> BUILDING SEE APPLICATION" $@ "\033[0m"
 	$(CXX) $(CXXFLAGS) -c $< -o see.o $(GLFLAGS)
 	$(CXX) -o $@ see.o libSPICE.a $(GLLINK)
 	

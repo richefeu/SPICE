@@ -4,7 +4,7 @@
 
 #include "vec2.hpp"
 
-class FarField {
+class FarConnection {
 public:
   std::vector<size_t> Idx;
   
