@@ -1,0 +1,22 @@
+{
+  "packing-model": {
+    "name": "grid",
+    "nx": 20,
+    "ny": 40,
+    "radius": [[0.25,0.0015],[0.251,0.0009]],
+    "radius-variation": [[0.25,0.0003],[0.251,0.0001]],
+    "density": 2700.0,
+    "include-far-connection" : true
+  },
+  "far-connection": {
+    "capture": "bottom",
+    "thickness": 0.1,
+    "Young": 10000.0,
+    "viscosity": 0.0,
+    "location": "particles"
+  },
+  "properties": {
+    "stiffness": 10000.0,
+    "friction": [[0.0, 0.8], [0.49, 0.8], [0.51, 0.1],[1.0, 0.1]]
+  }
+}
