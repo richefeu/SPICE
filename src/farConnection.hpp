@@ -18,7 +18,7 @@ public:
   // but these positions will be controlled for applying far field displacements (or...)
   // and a spring (stiffness K) acts between these points and the attached particles 
   
-  double K{0.0};
+  double K{10000.0};
   
   // we will maybe add a viscosity also
   // double visc{0.0};

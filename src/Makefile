@@ -20,7 +20,7 @@ endif
 
 # The list of source files for the library SPICE
 SOURCES = SPICE.cpp Particle.cpp Interaction.cpp Loading.cpp \
-          packingModel.cpp
+          pacOptionsManager.cpp packingManager.cpp farConnectionManager.cpp propertiesManager.cpp
 
 # Each cpp file listed below corresponds to an object file
 OBJECTS = $(SOURCES:%.cpp=%.o)

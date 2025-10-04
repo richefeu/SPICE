@@ -1,16 +1,16 @@
-#include "packingModel.hpp"
+#include "packingManager.hpp"
 
-void packingModel::pack(SPICE &box) {
-  if (name == "grid") {
+void packingManager::process(SPICE &box) {
+  if (option == "grid") {
     grid(box);
-  } else if (name == "geo-deposite") {
+  } else if (option == "geo-deposite") {
     geoDeposite(box);
   } else {
-    std::cout << "Unknown model name" << std::endl;
+    std::cout << "Unknown packing option: " << option << std::endl;
   }
 }
 
-void packingModel::grid(SPICE &box) {
+void packingManager::grid(SPICE &box) {
 
   Particle P;
   P.rot = 0.0;
@@ -84,10 +84,10 @@ void packingModel::grid(SPICE &box) {
   if (includeFarConnection) {
     box.bottom.Idx.clear();
     box.bottom.pos.clear();
-    box.bottom.K = 1000;
+    //box.bottom.K = 1000;
     box.top.Idx.clear();
     box.top.pos.clear();
-    box.top.K = 1000;
+    //box.top.K = 1000;
     for (size_t i = 0; i < box.Particles.size(); i++) {
       if (box.Particles[i].pos.y < from.y + 2.0 * rmax) {
         box.bottom.Idx.push_back(i);
@@ -111,4 +111,4 @@ void packingModel::grid(SPICE &box) {
   */
 }
 
-void packingModel::geoDeposite(SPICE & /*box*/) {}
+void packingManager::geoDeposite(SPICE & /*box*/) {}

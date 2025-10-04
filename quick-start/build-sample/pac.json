@@ -1,22 +1,28 @@
 {
-  "packing-model": {
-    "name": "grid",
+  "pac-options": {
+    "generated-file-name": "input.txt",
+    "loading": "ShearVV 0 0",
+    "verbose": true 
+  }, 
+  "packing-manager": {
+    "option": "grid",
     "nx": 20,
     "ny": 40,
-    "radius": [[0.25,0.0015],[0.251,0.0009]],
-    "radius-variation": [[0.25,0.0003],[0.251,0.0001]],
-    "density": 2700.0,
-    "include-far-connection" : true
+    "radius": [[0.25, 0.0015],[0.251, 0.0009]],
+    "radius-variation": [[0.25, 0.0003],[0.251, 0.0001]],
+    "include-far-connection" : true,
+    "density": 2700.0
   },
-  "far-connection": {
-    "capture": "bottom",
+  "far-connection-manager": {
+    "option": "bottom",
     "thickness": 0.1,
     "Young": 10000.0,
     "viscosity": 0.0,
     "location": "particles"
   },
-  "properties": {
+  "properties-manager": {
+    "density": 2700.0,
     "stiffness": 10000.0,
-    "friction": [[0.0, 0.8], [0.49, 0.8], [0.51, 0.1],[1.0, 0.1]]
+    "friction": [[0.25, 0.01],[0.251, 0.8]]
   }
 }

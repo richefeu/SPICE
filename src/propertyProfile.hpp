@@ -11,6 +11,11 @@ template <typename T> class propertyProfile {
 public:
   // Vector of (x, y) pairs
   std::vector<std::array<T, 2>> values;
+  
+  void setConstant(T value) {
+    values.clear();
+    values.push_back({(T)0, value});
+  }
 
   // Reads a JSON value and populates the 'values' vector.
   // The JSON can be either:
@@ -19,7 +24,7 @@ public:
   void readJson(const nlohmann::json &j) {
     values.clear(); // Clear existing values
 
-    if (j.is_number()) {
+   if (j.is_number()) {
       // Case: Single value (e.g., "cohesion": 1.0)
       values.push_back({(T)0.0, j.get<T>()});
     } else if (j.is_array()) {
@@ -31,10 +36,11 @@ public:
           std::cerr << "Invalid format for (x, y) pair. Skipping entry." << std::endl;
         }
       }
+      sort();
     } else {
       std::cerr << "Unsupported JSON format for propertyProfile." << std::endl;
     }
-    sort();
+    
   }
 
   // Sorts the 'values' in ascending order of x

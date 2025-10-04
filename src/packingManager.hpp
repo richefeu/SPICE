@@ -5,9 +5,9 @@
 #include "SPICE.hpp"
 #include "propertyProfile.hpp"
 
-class packingModel {
+class packingManager {
 public:
-  std::string name{"noname"};
+  std::string option{"grid"};
   size_t nx{10};
   size_t ny{10};
   propertyProfile<double> radius;
@@ -16,7 +16,7 @@ public:
   bool includeFarConnection{true};
   
   
-  void pack(SPICE & box);
+  void process(SPICE & box);
   
 private:
   void grid(SPICE & box);
