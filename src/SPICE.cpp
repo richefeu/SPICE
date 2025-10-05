@@ -27,7 +27,7 @@ void SPICE::saveConf(int i) {
 void SPICE::saveConf(const char *name) {
   std::ofstream conf(name);
 
-  conf << "SPICE 2025" << std::endl; // format: progName version-date
+  conf << "SPICE " << SPICE_VERSION << std::endl; // format: progName version-date
   conf << std::setprecision(6);
   conf << "t " << t << std::endl;
   conf << "tmax " << tmax << std::endl;
@@ -93,7 +93,7 @@ void SPICE::loadConf(const char *name) {
   if (prog != "SPICE") { std::cout << SPICE_WARN << "This is not file for SPICE executable!" << std::endl; }
   std::string date;
   conf >> date;
-  if (date != "2025") { std::cout << SPICE_WARN << "The version-date should be 2025!" << std::endl; }
+  if (date != SPICE_VERSION) { std::cout << SPICE_WARN << "The version-date should be " << SPICE_VERSION << std::endl; }
 
   std::string token;
   conf >> token;
@@ -119,21 +119,6 @@ void SPICE::loadConf(const char *name) {
     } else if (token == "gravity") {
       conf >> gravity;
     }
-
-    // à supprimer
-    /*
-    else if (token == "density") {
-      conf >> density;
-    } else if (token == "kn") {
-      conf >> kn;
-    } else if (token == "kt") {
-      conf >> kt;
-    } else if (token == "dampRate") {
-      conf >> dampRate;
-    } else if (token == "mu") {
-      conf >> mu;
-    }
-    */
 
     // profile kn 1  0 10000
     // profile mu 2  0.0 0.0   1.0 0.8
@@ -295,71 +280,6 @@ void SPICE::screenLog() {
 }
 
 // ---------------------------------------------------------
-// The integration loop (Velocity Verlet)
-// ---------------------------------------------------------
-void SPICE::integrate() {
-  double dt_2  = 0.5 * dt;
-  double dt2_2 = 0.5 * dt * dt;
-
-  std::ofstream stressOut("stress.out.txt");
-  double Lperiod = xmax - xmin;
-
-  while (t < tmax) {
-
-    Load->servo();
-
-    for (size_t i = 0; i < Particles.size(); i++) {
-      Particles[i].pos += dt * Particles[i].vel + dt2_2 * Particles[i].acc;
-      if (Particles[i].pos.x > xmax) {
-        Particles[i].pos.x -= Lperiod;
-      } else if (Particles[i].pos.x < xmin) {
-        Particles[i].pos.x += Lperiod;
-      }
-
-      Particles[i].vel += dt_2 * Particles[i].acc;
-
-      Particles[i].rot += dt * Particles[i].vrot + dt2_2 * Particles[i].arot;
-      Particles[i].vrot += dt_2 * Particles[i].arot;
-    }
-
-    Load->velocityVerlet_halfStep1(dt);
-
-    accelerations();
-
-    for (size_t i = 0; i < Particles.size(); i++) {
-      Particles[i].vel += dt_2 * Particles[i].acc;
-      Particles[i].vrot += dt_2 * Particles[i].arot;
-    }
-
-    Load->velocityVerlet_halfStep2(dt);
-
-    if (interCloseC >= interClose) {
-      resetCloseList(dVerlet);
-      interCloseC = 0.0;
-    }
-
-    if (interOutC >= interOut) {
-      stressOut << t << " " << Sig << std::endl;
-      interOutC = 0.0;
-    }
-
-    if (interHistC >= interHist) {
-      saveConf(iconf);
-      screenLog();
-      ++iconf;
-      interHistC = 0.0;
-    }
-
-    interHistC += dt;
-    interOutC += dt;
-    interCloseC += dt;
-    t += dt;
-  }
-
-  return;
-}
-
-// ---------------------------------------------------------
 // Get the x-shift to manage periodic copies
 // ---------------------------------------------------------
 double SPICE::getBranchShift(double xbranch, double Lperiod) {
@@ -447,6 +367,72 @@ void SPICE::resetCloseList(double dmax) {
 }
 
 // ---------------------------------------------------------
+// The integration loop (Velocity Verlet)
+// ---------------------------------------------------------
+void SPICE::integrate() {
+  double dt_2  = 0.5 * dt;
+  double dt2_2 = 0.5 * dt * dt;
+
+  std::ofstream stressOut("stress.out.txt");
+  double Lperiod = xmax - xmin;
+
+  Load->init();
+
+  std::cout << SPICE_INFO << "Beginning iterations." << std::endl;
+  while (t < tmax) {
+
+    Load->servo();
+
+    Load->velocityVerlet_halfStep1();
+    for (size_t i = 0; i < Particles.size(); i++) {
+      Particles[i].pos += dt * Particles[i].vel + dt2_2 * Particles[i].acc;
+      if (Particles[i].pos.x > xmax) {
+        Particles[i].pos.x -= Lperiod;
+      } else if (Particles[i].pos.x < xmin) {
+        Particles[i].pos.x += Lperiod;
+      }
+
+      Particles[i].vel += dt_2 * Particles[i].acc;
+
+      Particles[i].rot += dt * Particles[i].vrot + dt2_2 * Particles[i].arot;
+      Particles[i].vrot += dt_2 * Particles[i].arot;
+    }
+
+    accelerations();
+
+    Load->velocityVerlet_halfStep2();
+    for (size_t i = 0; i < Particles.size(); i++) {
+      Particles[i].vel += dt_2 * Particles[i].acc;
+      Particles[i].vrot += dt_2 * Particles[i].arot;
+    }
+
+    if (interCloseC >= interClose) {
+      resetCloseList(dVerlet);
+      interCloseC = 0.0;
+    }
+
+    if (interOutC >= interOut) {
+      stressOut << t << " " << Sig << std::endl;
+      interOutC = 0.0;
+    }
+
+    if (interHistC >= interHist) {
+      saveConf(iconf);
+      screenLog();
+      ++iconf;
+      interHistC = 0.0;
+    }
+
+    interHistC += dt;
+    interOutC += dt;
+    interCloseC += dt;
+    t += dt;
+  }
+
+  return;
+}
+
+// ---------------------------------------------------------
 //
 // ---------------------------------------------------------
 void SPICE::accelerations() {
@@ -467,28 +453,33 @@ void SPICE::accelerations() {
   Sig *= invV;
 
   // Finally compute the accelerations (translation and rotation)
+  Load->forceDrivenAcceleration();
   for (size_t i = 0; i < Particles.size(); i++) {
     Particles[i].acc  = gravity + Particles[i].force / Particles[i].mass;
     Particles[i].arot = Particles[i].moment / Particles[i].inertia;
   }
-
-  Load->forceDrivenAcceleration();
 }
 
 // ---------------------------------------------------------
 //
 // ---------------------------------------------------------
 void SPICE::computeFarConnectionForces() {
+  double Lperiod = xmax - xmin;
+
   // bottom far-stiffness
   for (size_t m = 0; m < bottom.Idx.size(); ++m) {
-    size_t idx = bottom.Idx[m];
-    Particles[idx].force -= bottom.K * (Particles[idx].pos - bottom.pos[m]);
+    size_t idx   = bottom.Idx[m];
+    vec2r branch = Particles[idx].pos - bottom.pos[m];
+    branch.x += getBranchShift(branch.x, Lperiod);
+    Particles[idx].force -= bottom.K * branch;
   }
 
   // top far-stiffness
   for (size_t m = 0; m < top.Idx.size(); ++m) {
-    size_t idx = top.Idx[m];
-    Particles[idx].force -= top.K * (Particles[idx].pos - top.pos[m]);
+    size_t idx   = top.Idx[m];
+    vec2r branch = Particles[idx].pos - top.pos[m];
+    branch.x += getBranchShift(branch.x, Lperiod);
+    Particles[idx].force -= top.K * branch;
   }
 
   // FIXME: should Sig be affected by these forces?

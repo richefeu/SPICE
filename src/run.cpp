@@ -24,10 +24,10 @@ int main(int argc, char const *argv[]) {
   } else {
     if (containsOnlyDigits(argv[1])) {
       int num = std::atoi(argv[1]);
-      std::cout << "load conf" << num << std::endl;
+      std::cout << SPICE_INFO << "load conf" << num << std::endl;
 			simu.loadConf(num);
     } else {
-			std::cout << "load " << argv[1] << std::endl;
+			std::cout << SPICE_INFO << "load " << argv[1] << std::endl;
       simu.loadConf(argv[1]);
     }
   }
@@ -37,7 +37,6 @@ int main(int argc, char const *argv[]) {
   simu.iconf++;
 
   simu.resetCloseList(simu.dVerlet);
-  std::cout << "Beginning iterations." << std::endl;
   simu.integrate();
 
   return 0;

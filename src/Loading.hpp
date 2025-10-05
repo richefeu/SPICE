@@ -13,10 +13,11 @@ public:
 
   virtual void read(std::istream &is) = 0;
   virtual void write(std::ostream &os) = 0;
+  virtual void init() {}
   virtual void servo() {}
-  virtual void velocityVerlet_halfStep1(double dt) = 0;
-  virtual void velocityVerlet_halfStep2(double dt) = 0;
-  virtual void forceDrivenAcceleration() = 0;
+  virtual void velocityVerlet_halfStep1(){};
+  virtual void velocityVerlet_halfStep2(){};
+  virtual void forceDrivenAcceleration(){};
 
   //Loading() = delete; // deactivated Ctor
   virtual ~Loading(); // virtual Dtor
@@ -24,28 +25,33 @@ public:
 
 class ShearVV : public Loading {
 public:
-  double vx;
-  double vy;
+  double vx{0.0};
+  double vy{0.0};
 
   ShearVV();
 
   virtual void read(std::istream &is);
   virtual void write(std::ostream &os);
-  virtual void velocityVerlet_halfStep1(double dt);
-  virtual void velocityVerlet_halfStep2(double dt);
-  virtual void forceDrivenAcceleration();
+  virtual void velocityVerlet_halfStep1();
 };
 
 class ShearPV : public Loading {
 public:
-  double pressure;
-  double velocity;
+  double pressure{0.0};
+  double velocity{0.0};
 
   ShearPV();
 
   virtual void read(std::istream &is);
   virtual void write(std::ostream &os);
-  virtual void velocityVerlet_halfStep1(double dt);
-  virtual void velocityVerlet_halfStep2(double dt);
+  virtual void init();
+  virtual void velocityVerlet_halfStep1();
+  virtual void velocityVerlet_halfStep2();
   virtual void forceDrivenAcceleration();
+private:
+  double top_mass{0.0};
+  //double top_fy{0.0};
+  double top_vy{0.0};
+  double top_accy{0.0};
+  
 };

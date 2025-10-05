@@ -25,7 +25,7 @@ void readJsonFile(const char *filename, pacOptionsManager &pacOptionsM, packingM
 
       pacOptionsM.loading = j["pac-options"].value("loading", pacOptionsM.loading);
       pacOptionsM.verbose = j["pac-options"].value("verbose", pacOptionsM.verbose);
-      
+
       std::vector<double> Gdefault{pacOptionsM.gravity.x, pacOptionsM.gravity.y};
       std::vector<double> G = j["pac-options"].value("gravity", Gdefault);
       pacOptionsM.gravity.x = G[0];
@@ -39,14 +39,12 @@ void readJsonFile(const char *filename, pacOptionsManager &pacOptionsM, packingM
       pacOptionsM.interOut   = j["pac-options"].value("time-between-outputs", pacOptionsM.interOut);
       pacOptionsM.interHist  = j["pac-options"].value("time-between-conf-files", pacOptionsM.interHist);
       pacOptionsM.dVerlet    = j["pac-options"].value("distance-alert", pacOptionsM.dVerlet);
-      
+
       // "critical-time-step-divisor": 100.0
       if (j["pac-options"].contains("critical-time-step-divisor")) {
         // computeTimeStep = true;
         // criticalTimeStepDivisor = j["pac-options"]["critical-time-step-divisor"];
-      } 
-      
-      
+      }
     }
 
     // --------------------------------------------
@@ -81,7 +79,6 @@ void readJsonFile(const char *filename, pacOptionsManager &pacOptionsM, packingM
       } else {
         packingM.radiusVariation.setConstant(0.0);
       }
-      
     }
 
     // --------------------------------------------
@@ -89,7 +86,7 @@ void readJsonFile(const char *filename, pacOptionsManager &pacOptionsM, packingM
       farConnectionM.option    = j["far-connection-manager"].value("option", farConnectionM.option);
       farConnectionM.location  = j["far-connection-manager"].value("location", farConnectionM.location);
       farConnectionM.thickness = j["far-connection-manager"].value("thickness", farConnectionM.thickness);
-      farConnectionM.Young     = j["far-connection-manager"].value("Young", farConnectionM.Young);
+      farConnectionM.stiffness = j["far-connection-manager"].value("stiffness", farConnectionM.stiffness);
       farConnectionM.viscosity = j["far-connection-manager"].value("viscosity", farConnectionM.viscosity);
     }
 

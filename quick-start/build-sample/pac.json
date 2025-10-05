@@ -1,17 +1,4 @@
 {
-  "pac-options": {
-    "generated-file-name": "input.txt",
-    "loading": "ShearVV 0 0",
-    "verbose": true,
-    "gravity": [0.0, -1],
-    "time": 0.0,
-    "end-time": 1.0,
-    "time-step": 1e-6,
-    "time-between-update-neighbors": 10e-6,
-    "time-between-outputs": 0.01,
-    "time-between-conf-files": 0.05,
-    "distance-alert": 0.001
-  }, 
   "packing-manager": {
     "option": "grid",
     "nx": 20,
@@ -23,10 +10,27 @@
     "add-top-chain": 10,
     "density": 2700.0
   },
+  "far-connection-manager": {
+    "stiffness": 1e6
+  },
   "properties-manager": {
     "density": 2700.0,
-    "normalStiffness": 1e8,
-    "tangentialStiffness": 1e8,
-    "friction": [[0.25, 0.3],[0.251, 0.8]]
+    "normalStiffness": 1e6,
+    "tangentialStiffness": 1e6,
+    "normalViscDampingRate":0.98,
+    "friction": [[0.5, 0.9],[0.501, 0.0]]
+  },
+  "pac-options": {
+    "generated-file-name": "input.txt",
+    "loading": "ShearVV 0 0",
+    "verbose": true,
+    "gravity": [0.0, -9.81],
+    "time": 0.0,
+    "end-time": 1.0,
+    "time-step": 1e-6,
+    "time-between-update-neighbors": 10e-6,
+    "time-between-outputs": 0.01,
+    "time-between-conf-files": 0.05,
+    "distance-alert": 0.001
   }
 }

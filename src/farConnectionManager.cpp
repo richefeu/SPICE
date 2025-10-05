@@ -1,6 +1,7 @@
 #include "farConnectionManager.hpp"
 
-void farConnectionManager::process(SPICE &/*box*/) {
+void farConnectionManager::process(SPICE &box) {
 
-  // to do
+  box.bottom.K = stiffness;
+  box.top.K    = stiffness;
 }

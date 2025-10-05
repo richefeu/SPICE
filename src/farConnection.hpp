@@ -10,7 +10,7 @@ public:
   
   //
   //     O
-  //    / branch
+  //    / l0
   //   x pos
   //  
   std::vector<vec2r> pos; 
@@ -22,4 +22,15 @@ public:
   
   // we will maybe add a viscosity also
   // double visc{0.0};
+  
+  // sauvegarde de forces dans les ressorts
+  //std::vector<double> l0;
+  //std::vector<double> l;
+  //std::vector<vec2r> n;
+  //std::vector<vec2r> force;
+  
+  // Pour controler en force ou pression il faudrait peut-être avoir une mass et une force résultante
+  // double mass
+  // vec2r resultantForce;
+  
 };
