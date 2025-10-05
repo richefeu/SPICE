@@ -4,14 +4,13 @@
 
 // ---------------------------------------------------------
 // ---------------------------------------------------------
-void SPICE::funnyHead() {
+void SPICE::head() {
   std::cout << '\n';
-  std::cout << "    zzzzzzzz" << '\n';
-  std::cout << " >  oooooooo >    SPICE - 2025" << '\n';
-  std::cout << " > oooooooo  >    Laboratoire 3SR" << '\n';
-  std::cout << " >  OOOOOOOO >    Université Grenoble Alpes" << '\n';
-  std::cout << " > OOOOOOOO  >    Complain to: vincent.richefeu@univ-grenoble-alpes.fr" << '\n';
-  std::cout << "   zzzzzzzz                    cyrille.couture@univ-grenoble-alpes.fr" << '\n';
+  std::cout << "      SPICE - " << SPICE_VERSION << '\n';
+  std::cout << "      Laboratoire 3SR" << '\n';
+  std::cout << "      Université Grenoble Alpes, France" << '\n';
+  std::cout << "         <vincent.richefeu@univ-grenoble-alpes.fr>" << '\n';
+  std::cout << "         <cyrille.couture@univ-grenoble-alpes.fr>" << '\n';
   std::cout << std::endl;
 }
 
@@ -33,18 +32,11 @@ void SPICE::saveConf(const char *name) {
   conf << "t " << t << std::endl;
   conf << "tmax " << tmax << std::endl;
   conf << "dt " << dt << std::endl;
-  conf << "interLook " << interLook << std::endl;
   conf << "interClose " << interClose << std::endl;
   conf << "interOut " << interOut << std::endl;
   conf << "interHist " << interHist << std::endl;
   conf << "dVerlet " << dVerlet << std::endl;
   conf << "gravity " << gravity << std::endl;
-  conf << "density " << density << std::endl;
-  conf << "kn " << kn << std::endl;
-  conf << "kt " << kt << std::endl;
-  conf << "dampRate " << dampRate << std::endl;
-  conf << "mu " << mu << std::endl;
-  conf << "nstor " << nstor << std::endl;
   conf << "iconf " << iconf << std::endl;
   conf << "Xperiod " << xmin << " " << xmax << std::endl;
   conf << "bottom " << bottom.Idx.size() << " " << bottom.K << std::endl;
@@ -63,12 +55,17 @@ void SPICE::saveConf(const char *name) {
   }
 
   conf << "Particles " << Particles.size() << std::endl;
+  conf << std::setprecision(15);
   for (size_t i = 0; i < Particles.size(); i++) {
     conf << Particles[i].pos << " " << Particles[i].vel << " " << Particles[i].acc << " " << Particles[i].rot << " "
          << Particles[i].vrot << " " << Particles[i].arot << " " << Particles[i].radius << " " << Particles[i].inertia
-         << " " << Particles[i].mass << std::endl;
+         << " " << Particles[i].mass << " ";
+    conf << Particles[i].normalStiffness << " " << Particles[i].tangentialStiffness << " "
+         << Particles[i].normalViscDampingRate << " " << Particles[i].friction << " " << Particles[i].rollingFriction
+         << " " << Particles[i].adhesion << " " << Particles[i].GcGlue << std::endl;
   }
   conf << "Interactions " << Interactions.size() << std::endl;
+  conf << std::setprecision(15);
   for (size_t i = 0; i < Interactions.size(); i++) {
     if (fabs(Interactions[i].fn) < 1.0e-20) { continue; }
     conf << Interactions[i].i << " " << Interactions[i].j << " " << Interactions[i].fn << " " << Interactions[i].ft
@@ -111,8 +108,6 @@ void SPICE::loadConf(const char *name) {
       conf >> tmax;
     } else if (token == "dt") {
       conf >> dt;
-    } else if (token == "interLook") {
-      conf >> interLook;
     } else if (token == "interClose") {
       conf >> interClose;
     } else if (token == "interOut") {
@@ -123,7 +118,11 @@ void SPICE::loadConf(const char *name) {
       conf >> dVerlet;
     } else if (token == "gravity") {
       conf >> gravity;
-    } else if (token == "density") {
+    }
+
+    // à supprimer
+    /*
+    else if (token == "density") {
       conf >> density;
     } else if (token == "kn") {
       conf >> kn;
@@ -133,15 +132,19 @@ void SPICE::loadConf(const char *name) {
       conf >> dampRate;
     } else if (token == "mu") {
       conf >> mu;
-    } else if (token == "nstor") {
-      conf >> nstor;
-    } else if (token == "iconf") {
+    }
+    */
+
+    // profile kn 1  0 10000
+    // profile mu 2  0.0 0.0   1.0 0.8
+
+    else if (token == "iconf") {
       conf >> iconf;
     } else if (token == "Xperiod") {
       conf >> xmin >> xmax;
     } else if (token == "capture") {
       if (Particles.empty()) {
-        std::cout << SPICE_WARN << "no far-field particles has been captured" << std::endl;
+        std::cout << SPICE_WARN << "no far-connection particles can be captured" << std::endl;
         std::cout << SPICE_INFO << "maybe 'capture' is placed before te definition of particles" << std::endl;
       }
       std::string which;
@@ -210,6 +213,9 @@ void SPICE::loadConf(const char *name) {
       Particle P;
       for (size_t i = 0; i < nb; i++) {
         conf >> P.pos >> P.vel >> P.acc >> P.rot >> P.vrot >> P.arot >> P.radius >> P.inertia >> P.mass;
+        conf >> P.normalStiffness >> P.tangentialStiffness >> P.normalViscDampingRate >> P.friction >>
+            P.rollingFriction >> P.adhesion >> P.GcGlue;
+
         Particles.push_back(P);
       }
     } else if (token == "Interactions") {
@@ -228,6 +234,11 @@ void SPICE::loadConf(const char *name) {
     conf >> token;
   }
 
+  // precompute things
+  combineParameters();
+  updateYrange();
+  // update...
+
   // some checks
   if (Particles.empty()) { std::cout << SPICE_WARN << "No Particles" << std::endl; }
 
@@ -235,6 +246,7 @@ void SPICE::loadConf(const char *name) {
 }
 
 // ---------------------------------------------------------
+//
 // ---------------------------------------------------------
 void SPICE::updateYrange() {
   ymin = Particles[0].pos.y - Particles[0].radius;
@@ -248,6 +260,17 @@ void SPICE::updateYrange() {
 }
 
 // ---------------------------------------------------------
+//
+// ---------------------------------------------------------
+void SPICE::updateTotalMass() {}
+
+// ---------------------------------------------------------
+//
+// ---------------------------------------------------------
+void SPICE::updateSizeRange() {}
+
+// ---------------------------------------------------------
+//
 // ---------------------------------------------------------
 void SPICE::capture(FarConnection &field, double hmin, double hmax) {
   field.Idx.clear();
@@ -262,161 +285,13 @@ void SPICE::capture(FarConnection &field, double hmin, double hmax) {
 
 // ---------------------------------------------------------
 // ---------------------------------------------------------
-void SPICE::buildSampleInteractively() {
-  Particle P;
-  P.rot = 0.0;
-
-  int ngw = 15;
-  std::cout << std::endl;
-  std::cout << "Number of spheres along width? ";
-  std::cin >> ngw;
-
-  double radius = 1e-3;
-  std::cout << "Maximum radius? ";
-  std::cin >> radius;
-  double deltaR = 0.2e-3;
-  std::cout << "Radius variation? ";
-  std::cin >> deltaR;
-  vec2r from(0.0, 0.0);
-  vec2r to(2.0 * (ngw + 1) * radius, 2.0 * (ngw + 1) * radius);
-  dVerlet = 0.95 * (radius - deltaR); // 95% of smallest radius
-
-  int i          = 0;
-  double massTot = 0.0;
-  double step    = to.x / (2.0 * ngw);
-  while (P.pos.y < to.x) {
-    P.radius = radius - deltaR * (static_cast<float>(rand()) / static_cast<float>(RAND_MAX));
-    P.mass   = M_PI * P.radius * P.radius * density;
-    massTot += P.mass;
-    P.inertia  = 0.5 * P.mass * P.radius * P.radius;
-    int column = i % ngw;
-    int row    = i / ngw;
-    if (row % 2 == 0) { // even row
-      P.pos.x = step + 2 * column * step;
-    } else { // odd row
-      P.pos.x = 2 * step + 2 * column * step;
-    }
-    P.pos.y = step + 2 * row * step;
-    if (P.pos.y <= to.y - step) { Particles.push_back(P); }
-    i++;
-  }
-
-  // recompute the bounding box
-  from.set(1e20, 1e20);
-  to.set(-1e20, -1e20);
-  vec2r diag(1.0, 1.0);
-  for (size_t i = 0; i < Particles.size(); i++) {
-    vec2r pmin = Particles[i].pos - Particles[i].radius * diag;
-    vec2r pmax = Particles[i].pos + Particles[i].radius * diag;
-    if (from.x > pmin.x) { from.x = pmin.x; }
-    if (from.y > pmin.y) { from.y = pmin.y; }
-    if (to.x < pmax.x) { to.x = pmax.x; }
-    if (to.y < pmax.y) { to.y = pmax.y; }
-  }
-  // period in x direction
-  xmin = from.x;
-  xmax = to.x;
-
-  // Far field attached particles
-  bottom.Idx.clear();
-  bottom.pos.clear();
-  bottom.K = 1000;
-  top.Idx.clear();
-  top.pos.clear();
-  top.K = 1000;
-  for (size_t i = 0; i < Particles.size(); i++) {
-    if (Particles[i].pos.y < from.y + 2.0 * radius) {
-      bottom.Idx.push_back(i);
-      bottom.pos.push_back(Particles[i].pos);
-    } else if (Particles[i].pos.y > to.y - 2.0 * radius) {
-      top.Idx.push_back(i);
-      top.pos.push_back(Particles[i].pos);
-    }
-  }
-
-  // Set ramdom velocities to particles
-  double vmax = 0.1;
-  std::cout << "Norm of ramdom velocities? ";
-  std::cin >> vmax;
-  for (size_t i = 0; i < Particles.size(); i++) {
-    Particles[i].vel.x = vmax * (static_cast<float>(rand()) / static_cast<float>(RAND_MAX));
-    Particles[i].vel.y = vmax * (static_cast<float>(rand()) / static_cast<float>(RAND_MAX));
-  }
-
-  double press = 1000.0;
-  std::cout << "Pressure? ";
-  std::cin >> press;
-  Load = Loading::create("ShearVV"); // bon il n'y a pas de pression pour le moment
-
-  // Parametres de simu
-
-  density = 2700.0;
-  std::cout << "Particle densities? ";
-  std::cin >> density;
-
-  kn = 1.e4;
-  while (true) {
-    char rep = 'y';
-    std::cout << "kn? ";
-    std::cin >> kn;
-    std::cout << "kn/p = " << kn / press << std::endl;
-    std::cout << "       Is it ok? (y/n) ";
-    std::cin >> rep;
-    if (rep == 'y' || rep == 'Y' || rep == 'o' || rep == 'O') { break; }
-  }
-
-  double ktkn = 1.0;
-  std::cout << "kt/kn? ";
-  std::cin >> ktkn;
-  kt = ktkn * kn;
-
-  dampRate = 0.95;
-  std::cout << "Viscuous damping rate? ";
-  std::cin >> dampRate;
-
-  mu = 0.8;
-  std::cout << "Friction coefficient? ";
-  std::cin >> mu;
-
-  dt = 1e-6;
-  while (true) {
-    char rep = 'y';
-    std::cout << "dt? ";
-    std::cin >> dt;
-    double m = M_PI * radius * radius * density;
-    std::cout << "dt/dt_crit = " << dt / (sqrt(m / kn)) << std::endl;
-    std::cout << "             Is it ok? (y/n) ";
-    std::cin >> rep;
-    if (rep == 'y' || rep == 'Y' || rep == 'o' || rep == 'O') { break; }
-  }
-
-  t           = 0.0;
-  nstor       = 0;
-  iconf       = 0;
-  interLookC  = 0.0;
-  interCloseC = 0.0;
-  interOutC   = 0.0;
-  interHistC  = 0.0;
-  tmax        = 5.0;
-  std::cout << "tmax? ";
-  std::cin >> tmax;
-
-  // TODO
-  interLook  = 0.25;
-  interClose = 0.01;
-  interOut   = 0.1;
-  interHist  = 0.25;
-
-  return;
-}
-
-// ---------------------------------------------------------
-// ---------------------------------------------------------
 void SPICE::screenLog() {
   std::cout << std::endl;
-  std::cout << "-----------------------------------" << std::endl;
+  std::cout << "-------------------------------------------------------------------------" << std::endl;
   std::cout << " iconf = " << iconf << ", time = " << t << std::endl;
-  std::cout << "-----------------------------------" << std::endl;
+  std::cout << " Stress: " << Sig << std::endl;
+  // ...
+  std::cout << "-------------------------------------------------------------------------" << std::endl;
 }
 
 // ---------------------------------------------------------
@@ -428,6 +303,7 @@ void SPICE::integrate() {
 
   std::ofstream stressOut("stress.out.txt");
   double Lperiod = xmax - xmin;
+
   while (t < tmax) {
 
     Load->servo();
@@ -462,22 +338,20 @@ void SPICE::integrate() {
       interCloseC = 0.0;
     }
 
-    /*
     if (interOutC >= interOut) {
-      stressOut << t << " " << Sigxx << " " << Sigxy << " " << Sigyx << " " << Sigyy << std::endl;
+      stressOut << t << " " << Sig << std::endl;
       interOutC = 0.0;
     }
-    */
 
     if (interHistC >= interHist) {
-      saveConf(iconf++);
+      saveConf(iconf);
       screenLog();
+      ++iconf;
       interHistC = 0.0;
     }
 
     interHistC += dt;
     interOutC += dt;
-    interLookC += dt;
     interCloseC += dt;
     t += dt;
   }
@@ -486,6 +360,7 @@ void SPICE::integrate() {
 }
 
 // ---------------------------------------------------------
+// Get the x-shift to manage periodic copies
 // ---------------------------------------------------------
 double SPICE::getBranchShift(double xbranch, double Lperiod) {
   if (xbranch > 0.5 * Lperiod) {
@@ -494,6 +369,30 @@ double SPICE::getBranchShift(double xbranch, double Lperiod) {
     return Lperiod;
   }
   return 0.0;
+}
+
+double SPICE::harmonicMean(double x, double y) {
+  return x * y / (x + y);
+}
+
+// ---------------------------------------------------------
+//
+// ---------------------------------------------------------
+void SPICE::combineParameters() {
+  for (size_t k = 0; k < Interactions.size(); ++k) {
+    size_t i = Interactions[k].i;
+    size_t j = Interactions[k].j;
+
+    Interactions[k].meff = harmonicMean(Particles[i].mass, Particles[j].mass);
+    Interactions[k].kn   = harmonicMean(Particles[i].normalStiffness, Particles[j].normalStiffness);
+    Interactions[k].kt   = harmonicMean(Particles[i].tangentialStiffness, Particles[j].tangentialStiffness);
+    double dampingRate   = harmonicMean(Particles[i].normalViscDampingRate, Particles[j].normalViscDampingRate);
+    Interactions[k].damp = 2.0 * dampingRate * sqrt(Interactions[k].kn * Interactions[k].meff);
+    Interactions[k].mu   = std::min(Particles[i].friction, Particles[j].friction);
+    Interactions[k].muR  = harmonicMean(Particles[i].rollingFriction, Particles[j].rollingFriction);
+    Interactions[k].fadh = std::min(Particles[i].adhesion, Particles[j].adhesion);
+    // ---
+  }
 }
 
 // ---------------------------------------------------------
@@ -525,13 +424,11 @@ void SPICE::resetCloseList(double dmax) {
       branch.x += getBranchShift(branch.x, Lperiod);
 
       double sum = dmax + Particles[i].radius + Particles[j].radius;
-      if (norm2(branch) <= sum * sum) {
-        double m    = (Particles[i].mass * Particles[j].mass) / (Particles[i].mass + Particles[j].mass);
-        double Damp = 2.0 * dampRate * sqrt(kn * m);
-        Interactions.push_back(Interaction(i, j, Damp));
-      }
+      if (norm2(branch) <= sum * sum) { Interactions.push_back(Interaction(i, j)); }
     }
   }
+
+  combineParameters();
 
   // retrieve ft values
   size_t k, kold = 0;
@@ -550,15 +447,57 @@ void SPICE::resetCloseList(double dmax) {
 }
 
 // ---------------------------------------------------------
+//
 // ---------------------------------------------------------
 void SPICE::accelerations() {
   // Set forces and moments to zero
   for (size_t i = 0; i < Particles.size(); ++i) {
     Particles[i].force.reset();
     Particles[i].moment = 0.0;
+    Particles[i].acc    = gravity;
+    Particles[i].arot   = 0.0;
   }
   Sig.reset();
 
+  computeForcesAndMoments();
+  computeFarConnectionForces();
+
+  updateYrange();
+  double invV = 1.0 / ((xmax - xmin) * (ymax - ymin));
+  Sig *= invV;
+
+  // Finally compute the accelerations (translation and rotation)
+  for (size_t i = 0; i < Particles.size(); i++) {
+    Particles[i].acc  = gravity + Particles[i].force / Particles[i].mass;
+    Particles[i].arot = Particles[i].moment / Particles[i].inertia;
+  }
+
+  Load->forceDrivenAcceleration();
+}
+
+// ---------------------------------------------------------
+//
+// ---------------------------------------------------------
+void SPICE::computeFarConnectionForces() {
+  // bottom far-stiffness
+  for (size_t m = 0; m < bottom.Idx.size(); ++m) {
+    size_t idx = bottom.Idx[m];
+    Particles[idx].force -= bottom.K * (Particles[idx].pos - bottom.pos[m]);
+  }
+
+  // top far-stiffness
+  for (size_t m = 0; m < top.Idx.size(); ++m) {
+    size_t idx = top.Idx[m];
+    Particles[idx].force -= top.K * (Particles[idx].pos - top.pos[m]);
+  }
+
+  // FIXME: should Sig be affected by these forces?
+}
+
+// ---------------------------------------------------------
+//
+// ---------------------------------------------------------
+void SPICE::computeForcesAndMoments() {
   double Lperiod = xmax - xmin;
   for (size_t k = 0; k < Interactions.size(); ++k) {
     size_t i = Interactions[k].i;
@@ -574,12 +513,13 @@ void SPICE::accelerations() {
       vec2r realVel = Particles[j].vel - Particles[i].vel; // Does not account for rotation yet
 
       // Normal force (elastic + viscuous)
-      vec2r n            = branch;
-      double len         = n.normalize();
-      double dn          = len - Particles[i].radius - Particles[j].radius;
-      double vn          = realVel * n;
-      double fne         = -kn * dn;
-      double fnv         = -Interactions[k].damp * vn;
+      vec2r n    = branch;
+      double len = n.normalize();
+      double dn  = len - Particles[i].radius - Particles[j].radius;
+      double vn  = realVel * n;
+      double fne = -Interactions[k].kn * dn;
+      double fnv = -Interactions[k].damp * vn;
+      //
       Interactions[k].fn = fne + fnv;
       if (Interactions[k].fn < 0.0) { Interactions[k].fn = 0.0; }
 
@@ -588,10 +528,12 @@ void SPICE::accelerations() {
       double Ri    = Particles[i].radius + 0.5 * dn;
       double Rj    = Particles[j].radius + 0.5 * dn;
       double vijt  = realVel * t - Particles[i].vrot * Ri - Particles[j].vrot * Rj;
-      double ft    = Interactions[k].ft - kt * dt * vijt;
-      double ftest = mu * Interactions[k].fn;
+      double ft    = Interactions[k].ft - Interactions[k].kt * dt * vijt;
+      double ftest = Interactions[k].mu * Interactions[k].fn;
       if (fabs(ft) > ftest) { ft = (ft > 0.0) ? ftest : -ftest; }
       Interactions[k].ft = ft;
+
+      // .... other force laws
 
       // Resultant force and moment
       vec2r f = Interactions[k].fn * n + Interactions[k].ft * t;
@@ -607,28 +549,4 @@ void SPICE::accelerations() {
       Sig.yy += f.y * branch.y;
     } // if
   } // Loop over interactions
-
-  // bottom far-stiffness
-  for (size_t m = 0; m < bottom.Idx.size(); ++m) {
-    size_t idx = bottom.Idx[m];
-    Particles[idx].force -= bottom.K * (Particles[idx].pos - bottom.pos[m]);
-  }
-
-  // top far-stiffness
-  for (size_t m = 0; m < top.Idx.size(); ++m) {
-    size_t idx = top.Idx[m];
-    Particles[idx].force -= top.K * (Particles[idx].pos - top.pos[m]);
-  }
-
-  updateYrange();
-  double invV = 1.0 / ((xmax - xmin) * (ymax - ymin));
-  Sig *= invV;
-
-  // Finally compute the accelerations (translation and rotation)
-  for (size_t i = 0; i < Particles.size(); i++) {
-    Particles[i].acc  = Particles[i].force / Particles[i].mass + gravity;
-    Particles[i].arot = Particles[i].moment / Particles[i].inertia;
-  }
-
-  Load->forceDrivenAcceleration();
 }

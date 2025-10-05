@@ -10,6 +10,9 @@ void packingManager::process(SPICE &box) {
   }
 }
 
+// TODO: addedGap (it could be usefull)
+//  initial pertuabation (displacement within addedGap)
+//. initial perturbation (velocities)
 void packingManager::grid(SPICE &box) {
 
   Particle P;
@@ -21,18 +24,31 @@ void packingManager::grid(SPICE &box) {
   std::cout << "ny =  " << ngh << std::endl;
 
   double rvarMax = radiusVariation.getMaxValue();
-  double rmax    = radius.getMaxValue() + rvarMax;
+  double rmax    = radius.getMaxValue() + rvarMax; // + addedGap
   double rmin    = radius.getMinValue();
-  // double deltaR = rmax - rmin;
+
   std::cout << "Maximum radius = " << rmax << std::endl;
   std::cout << "Maximum radius variation = " << rvarMax << std::endl;
   vec2r from(0.0, 0.0);
-  vec2r to(2.0 * (ngw + 1) * rmax, 2.0 * (ngh + 1) * rmax);
+  // vec2r to(2.0 * (ngw + 1) * rmax, 2.0 * (ngh + 1) * rmax);
+  vec2r to(2.0 * ngw * rmax + rmax, 2.0 * (ngh + 1) * rmax);
   box.dVerlet = 0.95 * rmin;
 
-  int i          = 0;
-  double massTot = 0.0;
-  double step    = to.x / (2.0 * ngw);
+  if (hasBottomLine) {
+    P.radius = 0.5 * to.x / (double)bottomNumber;
+    P.pos.y  = -P.radius;
+    double x = P.radius;
+    while (x < to.x) {
+      P.pos.x = x;
+      box.Particles.push_back(P);
+      x += 2.0 * P.radius;
+    }
+  }
+
+  size_t idFirst        = box.Particles.size();
+  int i                 = 0;
+  double step           = to.x / (2.0 * ngw);
+  double triangleFactor = 0.5 * sqrt(3.0);
   while (P.pos.y < to.y) {
     int column = i % ngw;
     int row    = i / ngw;
@@ -41,15 +57,28 @@ void packingManager::grid(SPICE &box) {
     } else { // odd row
       P.pos.x = 2 * step + 2 * column * step;
     }
-    P.pos.y = step + 2 * row * step;
+    P.pos.y = triangleFactor * step * (1 + 2 * row);
     if (P.pos.y <= to.y - step) {
       P.radius = rmax; // temporary radius
       box.Particles.push_back(P);
     }
     i++;
   }
+  size_t idLast = box.Particles.size();
+
+  if (hasTopLine) {
+    P.radius = 0.5 * to.x / (double)topNumber;
+    P.pos.y  = box.Particles[idLast - 1].pos.y + rmax + P.radius;
+    double x = P.radius;
+    while (x < to.x) {
+      P.pos.x = x;
+      box.Particles.push_back(P);
+      x += 2.0 * P.radius;
+    }
+  }
 
   // recompute bounding box
+  /*
   from.set(1e20, 1e20);
   to.set(-1e20, -1e20);
   vec2r diag(1.0, 1.0);
@@ -61,14 +90,18 @@ void packingManager::grid(SPICE &box) {
     if (to.x < pmax.x) { to.x = pmax.x; }
     if (to.y < pmax.y) { to.y = pmax.y; }
   }
+  */
+
   // period in x direction
   box.xmin = from.x;
   box.xmax = to.x;
-  box.ymin = from.y;
-  box.ymax = to.y;
+  box.updateYrange();
+  from.y = box.ymin;
+  to.y   = box.ymax;
 
   // recompute the radius, mass properties
-  for (size_t i = 0; i < box.Particles.size(); i++) {
+  // double massTot = 0.0;
+  for (size_t i = idFirst; i < idLast; i++) {
     double relativeHeight = (box.Particles[i].pos.y - box.ymin) / (box.ymax - box.ymin);
     double R              = radius.getValueAt(relativeHeight);
     double Rvar =
@@ -76,7 +109,7 @@ void packingManager::grid(SPICE &box) {
     R += Rvar;
     box.Particles[i].radius = R;
     box.Particles[i].mass   = M_PI * R * R * density;
-    massTot += box.Particles[i].mass;
+    // massTot += box.Particles[i].mass;
     box.Particles[i].inertia = 0.5 * box.Particles[i].mass * R * R;
   }
 
@@ -84,15 +117,20 @@ void packingManager::grid(SPICE &box) {
   if (includeFarConnection) {
     box.bottom.Idx.clear();
     box.bottom.pos.clear();
-    //box.bottom.K = 1000;
     box.top.Idx.clear();
     box.top.pos.clear();
-    //box.top.K = 1000;
+
+    double bottomThickness = 2.0 * rmax;
+    if (hasBottomLine) { bottomThickness = to.x / (double)bottomNumber; }
+
+    double topThickness = 2.0 * rmax;
+    if (hasTopLine) { topThickness = to.x / (double)topNumber; }
+
     for (size_t i = 0; i < box.Particles.size(); i++) {
-      if (box.Particles[i].pos.y < from.y + 2.0 * rmax) {
+      if (box.Particles[i].pos.y < from.y + bottomThickness) {
         box.bottom.Idx.push_back(i);
         box.bottom.pos.push_back(box.Particles[i].pos);
-      } else if (box.Particles[i].pos.y > to.y - 2.0 * rmax) {
+      } else if (box.Particles[i].pos.y > to.y - topThickness) {
         box.top.Idx.push_back(i);
         box.top.pos.push_back(box.Particles[i].pos);
       }
@@ -111,4 +149,5 @@ void packingManager::grid(SPICE &box) {
   */
 }
 
+// FIXME: not sure we will implement it
 void packingManager::geoDeposite(SPICE & /*box*/) {}

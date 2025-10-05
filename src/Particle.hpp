@@ -19,8 +19,17 @@ struct Particle {
   double inertia{0.0};
   double mass{0.0};
 
-  vec2r force; // resultant force
+  vec2r force;        // resultant force
   double moment{0.0}; // resultant moment
+
+  // Embeded parameters
+  double normalStiffness{1e6};
+  double tangentialStiffness{1e6};
+  double normalViscDampingRate{0.98};
+  double friction{0.0};
+  double rollingFriction{0.0};
+  double adhesion{0.0};
+  double GcGlue{0.0};
 
   Particle(); // Ctor
 };

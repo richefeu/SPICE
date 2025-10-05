@@ -16,11 +16,10 @@ bool containsOnlyDigits(const char *str) {
 
 int main(int argc, char const *argv[]) {
   SPICE simu;
-  simu.funnyHead();
+  simu.head();
 
-  if (argc < 2) {
-    simu.buildSampleInteractively();
-    simu.saveConf("input.txt");
+  if (argc != 2) {
+    std::cout << "usage: run <input-conf-file>" << std::endl;
     return 0;
   } else {
     if (containsOnlyDigits(argv[1])) {
@@ -33,7 +32,9 @@ int main(int argc, char const *argv[]) {
     }
   }
 
-  simu.saveConf(simu.iconf++);
+  simu.saveConf(simu.iconf);
+  simu.screenLog();
+  simu.iconf++;
 
   simu.resetCloseList(simu.dVerlet);
   std::cout << "Beginning iterations." << std::endl;

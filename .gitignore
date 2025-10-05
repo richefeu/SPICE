@@ -14,6 +14,8 @@ src/pac
 doc/SPICE-logo0.png
 doc/SPICE-logo1.png
 quick-start/build-sample/input.txt
+*conf*
+*stress.out.txt
 
 # Prerequisites
 *.d

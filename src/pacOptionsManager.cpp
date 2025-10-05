@@ -1,6 +1,17 @@
 #include "pacOptionsManager.hpp"
 
-void pacOptionsManager::process(SPICE & box) {
+void pacOptionsManager::process(SPICE &box) {
+
+  box.verbose    = verbose;
+  box.gravity    = gravity;
+  box.t          = t;
+  box.dt         = dt; // TODO: add possibility to set with portion of critical time step
+  box.tmax       = tmax;
+  box.interClose = interClose;
+  box.interOut   = interOut;
+  box.interHist  = interHist;
+  box.dVerlet    = dVerlet;
+
   if (loading[0] != '!') {
     std::istringstream iss(loading);
     std::string token;
@@ -14,5 +25,4 @@ void pacOptionsManager::process(SPICE & box) {
       box.Load->read(iss);
     }
   }
-  
 }

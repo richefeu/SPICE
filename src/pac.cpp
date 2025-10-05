@@ -3,7 +3,7 @@
 #include <fstream>
 #include <iostream>
 
-// toofus things
+// toofus headers
 #include "fileTool.hpp"
 #include "propertyProfile.hpp"
 #include "toofus-cpy/nlohmann/json.hpp"
@@ -19,11 +19,34 @@ void readJsonFile(const char *filename, pacOptionsManager &pacOptionsM, packingM
     // --------------------------------------------
     if (j.contains("pac-options")) {
       pacOptionsM.generatedFileName = j["pac-options"].value("generated-file-name", pacOptionsM.generatedFileName);
-      pacOptionsM.loading           = j["pac-options"].value("loading", pacOptionsM.loading);
-      pacOptionsM.verbose           = j["pac-options"].value("verbose", pacOptionsM.verbose);
       if (pacOptionsM.verbose) {
         std::cout << SPICE_INFO << "generated file name: " << pacOptionsM.generatedFileName << std::endl;
       }
+
+      pacOptionsM.loading = j["pac-options"].value("loading", pacOptionsM.loading);
+      pacOptionsM.verbose = j["pac-options"].value("verbose", pacOptionsM.verbose);
+      
+      std::vector<double> Gdefault{pacOptionsM.gravity.x, pacOptionsM.gravity.y};
+      std::vector<double> G = j["pac-options"].value("gravity", Gdefault);
+      pacOptionsM.gravity.x = G[0];
+      pacOptionsM.gravity.y = G[1];
+
+      pacOptionsM.t    = j["pac-options"].value("time", pacOptionsM.t);
+      pacOptionsM.tmax = j["pac-options"].value("end-time", pacOptionsM.tmax);
+      pacOptionsM.dt   = j["pac-options"].value("time-step", pacOptionsM.dt);
+
+      pacOptionsM.interClose = j["pac-options"].value("time-between-update-neighbors", pacOptionsM.interClose);
+      pacOptionsM.interOut   = j["pac-options"].value("time-between-outputs", pacOptionsM.interOut);
+      pacOptionsM.interHist  = j["pac-options"].value("time-between-conf-files", pacOptionsM.interHist);
+      pacOptionsM.dVerlet    = j["pac-options"].value("distance-alert", pacOptionsM.dVerlet);
+      
+      // "critical-time-step-divisor": 100.0
+      if (j["pac-options"].contains("critical-time-step-divisor")) {
+        // computeTimeStep = true;
+        // criticalTimeStepDivisor = j["pac-options"]["critical-time-step-divisor"];
+      } 
+      
+      
     }
 
     // --------------------------------------------
@@ -34,6 +57,18 @@ void readJsonFile(const char *filename, pacOptionsManager &pacOptionsM, packingM
       packingM.density = j["packing-manager"].value("density", packingM.density);
       packingM.includeFarConnection =
           j["packing-manager"].value("include-far-connection", packingM.includeFarConnection);
+
+      packingM.bottomNumber = j["packing-manager"].value("add-bottom-chain", 0);
+      if (packingM.bottomNumber > 0) {
+        packingM.hasBottomLine = true;
+        // packingM.bottomThickness = 2.0 * bottomRadius;
+      }
+
+      packingM.topNumber = j["packing-manager"].value("add-top-chain", 0);
+      if (packingM.topNumber > 0) {
+        packingM.hasTopLine = true;
+        // packingM.topThickness = 2.0 * topRadius;
+      }
 
       if (j["packing-manager"].contains("radius")) {
         packingM.radius.readJson(j["packing-manager"]["radius"]);
@@ -46,6 +81,7 @@ void readJsonFile(const char *filename, pacOptionsManager &pacOptionsM, packingM
       } else {
         packingM.radiusVariation.setConstant(0.0);
       }
+      
     }
 
     // --------------------------------------------
@@ -61,20 +97,34 @@ void readJsonFile(const char *filename, pacOptionsManager &pacOptionsM, packingM
     if (j.contains("properties-manager")) {
       if (j["properties-manager"].contains("density")) {
         propertiesM.density.readJson(j["properties-manager"]["density"]);
+        propertiesM.hasDensity = true;
       } else {
         propertiesM.density.setConstant(packingM.density);
+        propertiesM.hasDensity = false;
       }
 
       if (j["properties-manager"].contains("friction")) {
         propertiesM.friction.readJson(j["properties-manager"]["friction"]);
+        propertiesM.hasFriction = true;
       } else {
         propertiesM.friction.setConstant(0.5);
+        propertiesM.hasFriction = false;
       }
 
-      if (j["properties-manager"].contains("stiffness")) {
-        propertiesM.stiffness.readJson(j["properties-manager"]["stiffness"]);
+      if (j["properties-manager"].contains("normalStiffness")) {
+        propertiesM.normalStiffness.readJson(j["properties-manager"]["normalStiffness"]);
+        propertiesM.hasNormalStiffness = true;
       } else {
-        propertiesM.stiffness.setConstant(1e8);
+        propertiesM.normalStiffness.setConstant(1e8);
+        propertiesM.hasNormalStiffness = false;
+      }
+
+      if (j["properties-manager"].contains("tangentialStiffness")) {
+        propertiesM.tangentialStiffness.readJson(j["properties-manager"]["tangentialStiffness"]);
+        propertiesM.hasTangentialStiffness = true;
+      } else {
+        propertiesM.tangentialStiffness.setConstant(1e8);
+        propertiesM.hasTangentialStiffness = false;
       }
     }
 
@@ -108,10 +158,10 @@ int main(int argc, char const *argv[]) {
   // do the job
   SPICE box;
   packingM.process(box);
-  // farConnectionM.process(box);
-  // propertiesM.process(box);
+  farConnectionM.process(box);
+  propertiesM.process(box);
   pacOptionsM.process(box);
-  
+
   // save
   box.saveConf(pacOptionsM.generatedFileName.c_str());
 

@@ -14,6 +14,10 @@ public:
   propertyProfile<double> radiusVariation;
   double density{2700.0};
   bool includeFarConnection{true};
+  bool hasBottomLine{false};
+  bool hasTopLine{false};
+  int bottomNumber{0};
+  int topNumber{0};
   
   
   void process(SPICE & box);

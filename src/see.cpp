@@ -377,10 +377,10 @@ void drawPeriod() {
   glColor4f(1.0f, 0.0f, 0.0f, 0.5f);
   glLineWidth(2.0f);
   glBegin(GL_LINES);
-  glVertex2f(Conf.xmin, worldBox.min.y);
-  glVertex2f(Conf.xmin, worldBox.max.y);
-  glVertex2f(Conf.xmax, worldBox.min.y);
-  glVertex2f(Conf.xmax, worldBox.max.y);
+  glVertex2f(Conf.xmin, Conf.ymin);
+  glVertex2f(Conf.xmin, Conf.ymax);
+  glVertex2f(Conf.xmax, Conf.ymin);
+  glVertex2f(Conf.xmax, Conf.ymax);
   glEnd();
 }
 
