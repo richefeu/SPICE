@@ -83,7 +83,7 @@ public:
     }
 
     // Find the appropriate range for interpolation
-    auto comparator = [](const std::array<T, 2> &a, T x) { return a[0] < x; };
+    auto comparator = [](const std::array<T, 2> &a, T v) { return a[0] < v; };
     auto it         = std::lower_bound(values.begin(), values.end(), x, comparator);
 
     // Handle edge cases

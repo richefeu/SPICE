@@ -274,7 +274,8 @@ void SPICE::screenLog() {
   std::cout << std::endl;
   std::cout << "-------------------------------------------------------------------------" << std::endl;
   std::cout << " iconf = " << iconf << ", time = " << t << std::endl;
-  std::cout << " Stress: " << Sig << std::endl;
+  std::cout << " Stress           : " << Sig << std::endl;
+  std::cout << " Stress-connection: " << SigConnect << std::endl;
   // ...
   std::cout << "-------------------------------------------------------------------------" << std::endl;
 }
@@ -412,7 +413,7 @@ void SPICE::integrate() {
     }
 
     if (interOutC >= interOut) {
-      stressOut << t << " " << Sig << std::endl;
+      stressOut << t << " " << Sig << " " << SigConnect << std::endl;
       interOutC = 0.0;
     }
 
@@ -444,6 +445,7 @@ void SPICE::accelerations() {
     Particles[i].arot   = 0.0;
   }
   Sig.reset();
+  SigConnect.reset();
 
   computeForcesAndMoments();
   computeFarConnectionForces();
@@ -451,6 +453,7 @@ void SPICE::accelerations() {
   updateYrange();
   double invV = 1.0 / ((xmax - xmin) * (ymax - ymin));
   Sig *= invV;
+  SigConnect *= invV;
 
   // Finally compute the accelerations (translation and rotation)
   Load->forceDrivenAcceleration();
@@ -466,23 +469,31 @@ void SPICE::accelerations() {
 void SPICE::computeFarConnectionForces() {
   double Lperiod = xmax - xmin;
 
-  // bottom far-stiffness
+  // bottom soft-connection-stiffness
   for (size_t m = 0; m < bottom.Idx.size(); ++m) {
     size_t idx   = bottom.Idx[m];
     vec2r branch = Particles[idx].pos - bottom.pos[m];
     branch.x += getBranchShift(branch.x, Lperiod);
-    Particles[idx].force -= bottom.K * branch;
+    vec2r f = bottom.K * branch;
+    Particles[idx].force -= f;
+    SigConnect.xx += f.x * branch.x;
+    SigConnect.xy += f.x * branch.y;
+    SigConnect.yx += f.y * branch.x;
+    SigConnect.yy += f.y * branch.y;
   }
 
-  // top far-stiffness
+  // top soft-connection-stiffness
   for (size_t m = 0; m < top.Idx.size(); ++m) {
     size_t idx   = top.Idx[m];
     vec2r branch = Particles[idx].pos - top.pos[m];
     branch.x += getBranchShift(branch.x, Lperiod);
-    Particles[idx].force -= top.K * branch;
+    vec2r f = top.K * branch;
+    Particles[idx].force -= f;
+    SigConnect.xx += f.x * branch.x;
+    SigConnect.xy += f.x * branch.y;
+    SigConnect.yx += f.y * branch.x;
+    SigConnect.yy += f.y * branch.y;
   }
-
-  // FIXME: should Sig be affected by these forces?
 }
 
 // ---------------------------------------------------------
@@ -515,10 +526,10 @@ void SPICE::computeForcesAndMoments() {
       if (Interactions[k].fn < 0.0) { Interactions[k].fn = 0.0; }
 
       // Tangential force (friction)
-      vec2r t(-n.y, n.x);
+      vec2r T(-n.y, n.x);
       double Ri    = Particles[i].radius + 0.5 * dn;
       double Rj    = Particles[j].radius + 0.5 * dn;
-      double vijt  = realVel * t - Particles[i].vrot * Ri - Particles[j].vrot * Rj;
+      double vijt  = realVel * T - Particles[i].vrot * Ri - Particles[j].vrot * Rj;
       double ft    = Interactions[k].ft - Interactions[k].kt * dt * vijt;
       double ftest = Interactions[k].mu * Interactions[k].fn;
       if (fabs(ft) > ftest) { ft = (ft > 0.0) ? ftest : -ftest; }
@@ -527,7 +538,7 @@ void SPICE::computeForcesAndMoments() {
       // .... other force laws
 
       // Resultant force and moment
-      vec2r f = Interactions[k].fn * n + Interactions[k].ft * t;
+      vec2r f = Interactions[k].fn * n + Interactions[k].ft * T;
       Particles[i].force -= f;
       Particles[j].force += f;
       Particles[i].moment -= ft * Ri;

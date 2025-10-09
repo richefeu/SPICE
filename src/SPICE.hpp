@@ -44,6 +44,7 @@ public:
   int iconf{0};
   vec2r gravity;
   mat4r Sig;
+  mat4r SigConnect;
 
   size_t nBottom{0};
   size_t nTop{0};

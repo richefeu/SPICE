@@ -579,17 +579,6 @@ void buildMenu() {
 // Main function
 // =====================================================================
 
-// TODO move in somewhere into toofus
-bool containsOnlyDigits(const char *str) {
-  while (*str != '\0') {       // Iterate through each character in the string
-    if (!std::isdigit(*str)) { // Check if the current character is not a digit
-      return false;            // If any non-digit character is found, return false
-    }
-    str++; // Move to the next character
-  }
-  return true; // Return true if all characters are digits
-}
-
 int main(int argc, char *argv[]) {
 
   if (argc == 1) {
@@ -597,7 +586,7 @@ int main(int argc, char *argv[]) {
     std::cout << "Current Configuration: ";
     try_to_readConf(confNum, Conf, confNum);
   } else if (argc == 2) {
-    if (containsOnlyDigits(argv[1])) {
+    if (fileTool::containsOnlyDigits(argv[1])) {
       confNum = std::atoi(argv[1]);
       std::cout << "Current Configuration: ";
       try_to_readConf(confNum, Conf, confNum);

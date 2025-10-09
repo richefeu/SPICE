@@ -46,12 +46,12 @@ void packingManager::grid(SPICE &box) {
   }
 
   size_t idFirst        = box.Particles.size();
-  int i                 = 0;
+  int k                 = 0;
   double step           = to.x / (2.0 * ngw);
   double triangleFactor = 0.5 * sqrt(3.0);
   while (P.pos.y < to.y) {
-    int column = i % ngw;
-    int row    = i / ngw;
+    int column = k % ngw;
+    int row    = k / ngw;
     if (row % 2 == 0) { // even row
       P.pos.x = step + 2 * column * step;
     } else { // odd row
@@ -62,7 +62,7 @@ void packingManager::grid(SPICE &box) {
       P.radius = rmax; // temporary radius
       box.Particles.push_back(P);
     }
-    i++;
+    k++;
   }
   size_t idLast = box.Particles.size();
 

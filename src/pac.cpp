@@ -8,6 +8,38 @@
 #include "propertyProfile.hpp"
 #include "toofus-cpy/nlohmann/json.hpp"
 
+int main(int argc, char const *argv[]) {
+
+  if (argc != 2) {
+    std::cout << "usage: set <data.json>" << std::endl;
+    return 0;
+  }
+
+  if (!fileTool::fileExists(argv[1])) {
+    std::cout << "File " << argv[1] << "does not exist" << std::endl;
+    return 0;
+  }
+
+  // read dataset stored in json format
+  pacOptionsManager pacOptionsM;
+  packingManager packingM;
+  farConnectionManager farConnectionM;
+  propertiesManager propertiesM;
+  readJsonFile(argv[1], pacOptionsM, packingM, farConnectionM, propertiesM);
+
+  // do the job
+  SPICE box;
+  packingM.process(box);
+  farConnectionM.process(box);
+  propertiesM.process(box);
+  pacOptionsM.process(box);
+
+  // save
+  box.saveConf(pacOptionsM.generatedFileName.c_str());
+
+  return 0;
+}
+
 void readJsonFile(const char *filename, pacOptionsManager &pacOptionsM, packingManager &packingM,
                   farConnectionManager &farConnectionM, propertiesManager &propertiesM) {
   std::ifstream jsonfile(filename);
@@ -131,36 +163,4 @@ void readJsonFile(const char *filename, pacOptionsManager &pacOptionsM, packingM
     std::cerr << "  Byte position: " << e.byte << std::endl;
     std::cerr << "  Line: " << std::to_string(e.byte / 80 + 1) << std::endl; // Approximate line number
   }
-}
-
-int main(int argc, char const *argv[]) {
-
-  if (argc != 2) {
-    std::cout << "usage: set <data.json>" << std::endl;
-    return 0;
-  }
-
-  if (!fileTool::fileExists(argv[1])) {
-    std::cout << "File " << argv[1] << "does not exist" << std::endl;
-    return 0;
-  }
-
-  // read dataset stored in json format
-  pacOptionsManager pacOptionsM;
-  packingManager packingM;
-  farConnectionManager farConnectionM;
-  propertiesManager propertiesM;
-  readJsonFile(argv[1], pacOptionsM, packingM, farConnectionM, propertiesM);
-
-  // do the job
-  SPICE box;
-  packingM.process(box);
-  farConnectionM.process(box);
-  propertiesM.process(box);
-  pacOptionsM.process(box);
-
-  // save
-  box.saveConf(pacOptionsM.generatedFileName.c_str());
-
-  return 0;
 }

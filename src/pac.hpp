@@ -1,13 +1,16 @@
 // Packing And Configuration
 #pragma once
 
+#include <fstream>
 #include <iostream>
 #include <sstream>
-#include <fstream>
 
 #include "SPICE.hpp"
 
+#include "farConnectionManager.hpp"
 #include "pacOptionsManager.hpp"
 #include "packingManager.hpp"
-#include "farConnectionManager.hpp"
 #include "propertiesManager.hpp"
+
+void readJsonFile(const char *filename, pacOptionsManager &, packingManager &, farConnectionManager &,
+                  propertiesManager &);

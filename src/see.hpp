@@ -59,6 +59,8 @@ enum MouseMode { NOTHING, ROTATION, ZOOM, PAN } mouse_mode = NOTHING;
 int display_mode = 0; // sample or slice rotation
 int mouse_start[2];
 
+void printInfo();
+
 // Drawing functions
 void setColor(int i, GLfloat alpha); // this will set a color depending on the selected option
 void drawForces();

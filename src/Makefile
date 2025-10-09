@@ -1,15 +1,23 @@
+CRAZY_FLAGS = -Wcast-align -Wcast-qual \
+-Wctor-dtor-privacy -Wdisabled-optimization -Wformat=2 -Winit-self \
+-Wlogical-op -Wmissing-declarations -Wmissing-include-dirs -Wnoexcept \
+-Woverloaded-virtual -Wredundant-decls -Wshadow \
+-Wsign-conversion -Wsign-promo -Wstrict-null-sentinel -Wstrict-overflow=5 \
+-Wswitch-default -Wundef -Wno-unused
+
+# -Wold-style-cast
 
 UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Darwin)
   CXX = g++-15
-  CXXFLAGS = -O3 -Wall -Wextra -std=c++17 -I ./toofus
+  CXXFLAGS = -O3 -Wall -Wextra -pedantic -std=c++17 -I ./toofus
   GLLINK = `pkg-config --libs gl glu glut`
 	GLFLAGS = `pkg-config --cflags gl glu glut`	
 	# on apple, use brew to install freeglut and mesa-glu
 else
   CXX = g++
   CXXFLAGS = -O3 -Wall -std=c++17 -I ./toofus
-  GLLINK = -lGLU -lGL -L/usr/X11R6/lib -lglut -lXmu -lXext -lX11 -lXi
+  GLLINK = -lGLU -lGL -L/usr/X11R6/lib -lglut -lXext -lX11
 endif
 
 # Ensure the toofus directory exists
