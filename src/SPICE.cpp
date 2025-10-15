@@ -74,6 +74,7 @@ void SPICE::saveConf(const char *name) {
 }
 
 // ---------------------------------------------------------
+// A fast way to load 'conf<i>' files (just by specifying i)
 // ---------------------------------------------------------
 void SPICE::loadConf(int i) {
   char fname[256];
@@ -82,6 +83,7 @@ void SPICE::loadConf(int i) {
 }
 
 // ---------------------------------------------------------
+// Loading a conf-file by giving its name path
 // ---------------------------------------------------------
 void SPICE::loadConf(const char *name) {
   std::ifstream conf(name);
@@ -269,13 +271,16 @@ void SPICE::capture(FarConnection &field, double hmin, double hmax) {
 }
 
 // ---------------------------------------------------------
+// Log periodically useful informations
+// on how the computation goes
 // ---------------------------------------------------------
 void SPICE::screenLog() {
   std::cout << std::endl;
   std::cout << "-------------------------------------------------------------------------" << std::endl;
   std::cout << " iconf = " << iconf << ", time = " << t << std::endl;
-  std::cout << " Stress           : " << Sig << std::endl;
+  std::cout << " Stress-particles:  " << Sig << std::endl;
   std::cout << " Stress-connection: " << SigConnect << std::endl;
+  std::cout << " Stress-total:      " << Sig + SigConnect << std::endl;
   // ...
   std::cout << "-------------------------------------------------------------------------" << std::endl;
 }
@@ -297,7 +302,7 @@ double SPICE::harmonicMean(double x, double y) {
 }
 
 // ---------------------------------------------------------
-//
+// Combine the parameters that are stored within particles
 // ---------------------------------------------------------
 void SPICE::combineParameters() {
   for (size_t k = 0; k < Interactions.size(); ++k) {
@@ -317,7 +322,8 @@ void SPICE::combineParameters() {
 }
 
 // ---------------------------------------------------------
-// O(N^2) algorithm
+// O(N^2) algorithm for updating the list of neighbors
+// of each particle
 // ---------------------------------------------------------
 void SPICE::resetCloseList(double dmax) {
   // store ft because the list will be erased before being rebuilt
@@ -434,7 +440,7 @@ void SPICE::integrate() {
 }
 
 // ---------------------------------------------------------
-//
+// Compute the accelerations 
 // ---------------------------------------------------------
 void SPICE::accelerations() {
   // Set forces and moments to zero
@@ -464,7 +470,7 @@ void SPICE::accelerations() {
 }
 
 // ---------------------------------------------------------
-//
+// FIXME: rename FAR -> SOFT (or nothing)
 // ---------------------------------------------------------
 void SPICE::computeFarConnectionForces() {
   double Lperiod = xmax - xmin;

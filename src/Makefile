@@ -14,18 +14,21 @@ ifeq ($(UNAME_S),Darwin)
   GLLINK = `pkg-config --libs gl glu glut`
 	GLFLAGS = `pkg-config --cflags gl glu glut`	
 	# on apple, use brew to install freeglut and mesa-glu
+	
+  VTK_CFLAGS  = `pkg-config --cflags vtk`
+  VTK_LDFLAGS = `pkg-config --libs vtk`
+	
 else
   CXX = g++
   CXXFLAGS = -O3 -Wall -std=c++17 -I ./toofus
   GLLINK = -lGLU -lGL -L/usr/X11R6/lib -lglut -lXext -lX11
+	
+  # --- VTK setup --- 
+  VTK_CFLAGS = -I/usr/include/vtk-9.1
+  VTK_LDFLAGS = -lvtkCommonCore-9.1 -lvtkCommonDataModel-9.1 -lvtkIOXML-9.1 -lvtkIOCore-9.1	
 endif
 
-# --- VTK setup ---
-VTK_CFLAGS  := $(shell pkg-config --cflags vtk)
-VTK_LDFLAGS := $(shell pkg-config --libs vtk)
 
-VTK_INC = -I/usr/include/vtk-9.1
-VTK_LIB = -lvtkCommonCore-9.1 -lvtkCommonDataModel-9.1 -lvtkIOXML-9.1 -lvtkIOCore-9.1
 
 # Ensure the toofus directory exists
 ifeq ($(wildcard ./toofus),)
@@ -87,6 +90,6 @@ see: see.cpp libSPICE.a
 
 vtk: vtk.cpp libSPICE.a
 	@echo "\033[0;32m-> BUILDING VTK APPLICATION" $@ "\033[0m"
-	$(CXX) $(CXXFLAGS) $(VTK_INC) -c $< -o vtk.o $(GLFLAGS)
-	$(CXX) -o $@ vtk.o libSPICE.a $(VTK_LIB) $(GLLINK) -lstdc++fs
+	$(CXX) $(CXXFLAGS) $(VTK_CFLAGS) -c $< -o vtk.o $(GLFLAGS)
+	$(CXX) -o $@ vtk.o libSPICE.a $(VTK_LDFLAGS) $(GLLINK) -lstdc++fs
 	

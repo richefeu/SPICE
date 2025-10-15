@@ -6,7 +6,7 @@
 // toofus headers
 #include "fileTool.hpp"
 #include "propertyProfile.hpp"
-#include "toofus-cpy/nlohmann/json.hpp"
+//#include "toofus-gate/nlohmann/json.hpp"
 
 int main(int argc, char const *argv[]) {
 

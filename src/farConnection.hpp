@@ -4,6 +4,7 @@
 
 #include "vec2.hpp"
 
+// Maybe we should rename it Connection or SoftConnection ??????
 class FarConnection {
 public:
   std::vector<size_t> Idx;

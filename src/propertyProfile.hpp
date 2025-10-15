@@ -5,7 +5,7 @@
 #include <iostream>
 #include <vector>
 
-#include "toofus-cpy/nlohmann/json.hpp"
+#include "toofus-gate/nlohmann/json.hpp"
 
 template <typename T> class propertyProfile {
 public:
