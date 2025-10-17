@@ -9,6 +9,7 @@
 src/run
 src/see
 src/pac
+src/vtk
 
 # files that can be generated but not on repository
 doc/SPICE-logo0.png
@@ -16,6 +17,9 @@ doc/SPICE-logo1.png
 quick-start/build-sample/input.txt
 *conf*
 *stress.out.txt
+*paraview.pvd
+**/vtp/
+.vscode
 
 # Prerequisites
 *.d
