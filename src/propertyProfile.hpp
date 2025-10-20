@@ -11,7 +11,7 @@ template <typename T> class propertyProfile {
 public:
   // Vector of (x, y) pairs
   std::vector<std::array<T, 2>> values;
-  
+
   void setConstant(T value) {
     values.clear();
     values.push_back({(T)0, value});
@@ -24,7 +24,7 @@ public:
   void readJson(const nlohmann::json &j) {
     values.clear(); // Clear existing values
 
-   if (j.is_number()) {
+    if (j.is_number()) {
       // Case: Single value (e.g., "cohesion": 1.0)
       values.push_back({(T)0.0, j.get<T>()});
     } else if (j.is_array()) {
@@ -40,7 +40,10 @@ public:
     } else {
       std::cerr << "Unsupported JSON format for propertyProfile." << std::endl;
     }
-    
+  }
+
+  void readStream(std::istream & is) {
+    // TODO
   }
 
   // Sorts the 'values' in ascending order of x
@@ -61,7 +64,7 @@ public:
     }
     return maxValue;
   }
-  
+
   T getMinValue() const {
     if (values.empty()) {
       std::cout << "No data points in property profile" << std::endl;

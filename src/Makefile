@@ -15,8 +15,12 @@ ifeq ($(UNAME_S),Darwin)
 	GLFLAGS = `pkg-config --cflags gl glu glut`	
 	# on apple, use brew to install freeglut and mesa-glu
 	
-  VTK_CFLAGS  = `pkg-config --cflags vtk`
-  VTK_LDFLAGS = `pkg-config --libs vtk`
+  #VTK_CFLAGS  = `pkg-config --cflags vtk`
+  #VTK_LDFLAGS = `pkg-config --libs vtk`
+  VTK_CFLAGS  = -I /opt/homebrew/Cellar/vtk/9.5.2/include/vtk-9.5
+  VTK_LDFLAGS = -L /opt/homebrew/Cellar/vtk/9.5.2/lib -lvtkCommonCore-9.5 -lvtkCommonDataModel-9.5 \
+	 -lvtkIOXML-9.5 -lvtkIOCore-9.5
+	
 	
 else
   CXX = g++
@@ -91,5 +95,5 @@ see: see.cpp libSPICE.a
 vtk: vtk.cpp libSPICE.a
 	@echo "\033[0;32m-> BUILDING VTK APPLICATION" $@ "\033[0m"
 	$(CXX) $(CXXFLAGS) $(VTK_CFLAGS) -c $< -o vtk.o $(GLFLAGS)
-	$(CXX) -o $@ vtk.o libSPICE.a $(VTK_LDFLAGS) $(GLLINK) -lstdc++fs
+	$(CXX) -o $@ vtk.o libSPICE.a $(VTK_LDFLAGS) -lstdc++fs
 	

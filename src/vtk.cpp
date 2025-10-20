@@ -9,8 +9,8 @@
 
 #include "SPICE.hpp"
 #include "fileTool.hpp"
-// #include "see.hpp"
-SPICE CF ; 
+
+//SPICE CF; 
 
 bool try_to_readConf(int num, SPICE &CF, int &OKNum) {
   char file_name[256];

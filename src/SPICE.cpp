@@ -125,6 +125,41 @@ void SPICE::loadConf(const char *name) {
     // profile kn 1  0 10000
     // profile mu 2  0.0 0.0   1.0 0.8
 
+    /*
+    // std::map<std::string,propertyProfile<double>> profile;
+    // e.g. profile["kn"] ...
+if (token == "profile") {
+    std::string param;
+    if (!(conf >> param)) {
+        std::cout << SPICE_WARN << "profile name number {[ y value ] x number}" << std::endl;
+        std::cout << SPICE_WARN << "e.g. profile mu 2  0.0 0.0  1.0 0.8" << std::endl;
+        return;
+    }
+    auto it = profile.find(param);
+    if (it == profile.end()) {
+        // Insert new entry
+        auto result = profile.emplace(param, propertyProfile<double>());
+        if (!result.second) {
+            // Handle insertion failure
+
+            return;
+        }
+        it = result.first;
+    }
+    try {
+        it->second.readStream(conf);
+    } catch (...) {
+        // Handle error
+        std::cout << SPICE_WARN << "profile name number {[ y value ] x number}" << std::endl;
+        std::cout << SPICE_WARN << "e.g. profile mu 2  0.0 0.0  1.0 0.8" << std::endl;
+        throw;
+    }
+}
+
+
+
+
+    */
     else if (token == "iconf") {
       conf >> iconf;
     } else if (token == "Xperiod") {
@@ -221,10 +256,10 @@ void SPICE::loadConf(const char *name) {
     conf >> token;
   }
 
-  // precompute things
-  combineParameters();
+  // precompute things ========================================
   updateYrange();
-  // update...
+  // TODO set the property profiles that have been eventually (re-)set
+  combineParameters();
 
   // some checks
   if (Particles.empty()) { std::cout << SPICE_WARN << "No Particles" << std::endl; }
@@ -309,6 +344,9 @@ void SPICE::combineParameters() {
     size_t i = Interactions[k].i;
     size_t j = Interactions[k].j;
 
+    // TODO with functionDispatcher in toofus
+    // Interactions[k].kn = combineDispatcher.call(kn_dispatcher, Particles[i].kn, Particles[j].kn);
+
     Interactions[k].meff = harmonicMean(Particles[i].mass, Particles[j].mass);
     Interactions[k].kn   = harmonicMean(Particles[i].normalStiffness, Particles[j].normalStiffness);
     Interactions[k].kt   = harmonicMean(Particles[i].tangentialStiffness, Particles[j].tangentialStiffness);
@@ -327,19 +365,15 @@ void SPICE::combineParameters() {
 // ---------------------------------------------------------
 void SPICE::resetCloseList(double dmax) {
   // store ft because the list will be erased before being rebuilt
+  /*
   struct ftbak_t {
     size_t i, j;
     double ft;
   };
+  */
 
-  std::vector<ftbak_t> ftbak;
-  ftbak_t I;
-  for (size_t k = 0; k < Interactions.size(); ++k) {
-    I.i  = Interactions[k].i;
-    I.j  = Interactions[k].j;
-    I.ft = Interactions[k].ft;
-    ftbak.push_back(I);
-  }
+  std::vector<Interaction> storedInteractions;
+  for (size_t k = 0; k < Interactions.size(); ++k) { storedInteractions.push_back(Interactions[k]); }
 
   // now rebuild the list
   Interactions.clear();
@@ -360,14 +394,18 @@ void SPICE::resetCloseList(double dmax) {
   // retrieve ft values
   size_t k, kold = 0;
   for (k = 0; k < Interactions.size(); ++k) {
-    while (kold < ftbak.size() && ftbak[kold].i < Interactions[k].i) { ++kold; }
-    if (kold == ftbak.size()) { break; }
+    while (kold < storedInteractions.size() && storedInteractions[kold].i < Interactions[k].i) { ++kold; }
+    if (kold == storedInteractions.size()) { break; }
 
-    while (kold < ftbak.size() && ftbak[kold].i == Interactions[k].i && ftbak[kold].j < Interactions[k].j) { ++kold; }
-    if (kold == ftbak.size()) { break; }
+    while (kold < storedInteractions.size() && storedInteractions[kold].i == Interactions[k].i &&
+           storedInteractions[kold].j < Interactions[k].j) {
+      ++kold;
+    }
+    if (kold == storedInteractions.size()) { break; }
 
-    if (ftbak[kold].i == Interactions[k].i && ftbak[kold].j == Interactions[k].j) {
-      Interactions[k].ft = ftbak[kold].ft;
+    if (storedInteractions[kold].i == Interactions[k].i && storedInteractions[kold].j == Interactions[k].j) {
+      // Interactions[k].ft = ftbak[kold].ft;
+      Interactions[k] = storedInteractions[kold];
       ++kold;
     }
   }
@@ -440,7 +478,7 @@ void SPICE::integrate() {
 }
 
 // ---------------------------------------------------------
-// Compute the accelerations 
+// Compute the accelerations
 // ---------------------------------------------------------
 void SPICE::accelerations() {
   // Set forces and moments to zero
