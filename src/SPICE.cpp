@@ -67,9 +67,11 @@ void SPICE::saveConf(const char *name) {
   conf << "Interactions " << Interactions.size() << std::endl;
   conf << std::setprecision(15);
   for (size_t i = 0; i < Interactions.size(); i++) {
-    if (fabs(Interactions[i].fn) < 1.0e-20) { continue; }
-    conf << Interactions[i].i << " " << Interactions[i].j << " " << Interactions[i].fn << " " << Interactions[i].ft
-         << " " << Interactions[i].damp << std::endl;
+    //if (fabs(Interactions[i].fn) < 1.0e-20 && Interactions[i].bond ==0) { continue; }
+    conf << Interactions[i].i << " " << Interactions[i].j << " " << Interactions[i].bond << " " << Interactions[i].solidbond
+         << " " << Interactions[i].fn << " " << Interactions[i].fnb
+         << " " << Interactions[i].ft << " " << Interactions[i].ftb
+         << " " << Interactions[i].damp << " " << Interactions[i].Gs << " " << Interactions[i].dn0 << std::endl;
   }
 }
 
@@ -227,6 +229,11 @@ if (token == "profile") {
         Load->box = this;
         Load->read(conf);
       }
+    
+    } else if (token == "activateBonds") {
+  
+      conf >> solidbond >> dmax;
+      activateBonds(solidbond, dmax);
 
     } else if (token == "Particles") {
       size_t nb;
@@ -246,8 +253,9 @@ if (token == "profile") {
       Interactions.clear();
       Interaction I;
       for (size_t i = 0; i < nb; i++) {
-        conf >> I.i >> I.j >> I.fn >> I.ft >> I.damp;
+        conf >> I.i >> I.j >> I.bond >> I.solidbond >> I.fn >> I.fnb >> I.ft >> I.ftb >> I.damp >> I.Gs >> I.dn0;
         Interactions.push_back(I);
+        // std::cout << i << ": " << I.i << " " << I.j << " " << I.bond << " " << I.solidbond << std::endl;
       }
     } else {
       std::cout << SPICE_WARN << "Unknown token: " << token << std::endl;
@@ -279,6 +287,43 @@ void SPICE::updateYrange() {
     y = Particles[i].pos.y - Particles[i].radius;
     if (y < ymin) { ymin = y; }
   }
+}
+
+// ---------------------------------------------------------
+//
+// ---------------------------------------------------------
+void SPICE::activateBonds(bool solidbond, double dmax) {
+  // In case the conf-file has no interactions, the neighbor list is updated
+  resetCloseList(dVerlet);
+
+  std::cout << " routine to activate bonds" << std::endl;
+
+  for (size_t k = 0; k < Interactions.size(); k++) {
+    size_t i = Interactions[k].i;
+    size_t j = Interactions[k].j;
+
+    double Lperiod = xmax - xmin;
+    vec2r branch = Particles[j].pos - Particles[i].pos;
+    branch.x += getBranchShift(branch.x, Lperiod);
+
+    double branchLen2 = norm2(branch);
+    double sum = dmax + Particles[i].radius + Particles[j].radius;
+    if (branchLen2 <= sum * sum) {
+
+      // switch to a cemented/bonded link
+      Interactions[k].bond = true;
+      Interactions[k].solidbond = solidbond;
+      std::cout << " activate bond = " << k << std::endl;
+
+
+      double dn = sqrt(branchLen2) - (Particles[i].radius + Particles[j].radius);
+      if (dn >= 0.0)
+        Interactions[k].dn0 = dn;
+      else
+        Interactions[k].dn0 = 0.0;
+
+    }  // endif
+  }    // end loop over interactions
 }
 
 // ---------------------------------------------------------
@@ -546,53 +591,91 @@ void SPICE::computeFarConnectionForces() {
 void SPICE::computeForcesAndMoments() {
   double Lperiod = xmax - xmin;
   for (size_t k = 0; k < Interactions.size(); ++k) {
+
+    // all this will be in the particle params -->
+    //bool bond = false;
+    //bool solidbond = false;
+    //double fnb = 0.0;
+    //double ftb = 0.0;
+    // <--
+
     size_t i = Interactions[k].i;
     size_t j = Interactions[k].j;
 
     vec2r branch = Particles[j].pos - Particles[i].pos;
     branch.x += getBranchShift(branch.x, Lperiod);
+    
+    vec2r n = branch;
+    vec2r realVel = Particles[j].vel - Particles[i].vel; // Does not account for rotation yet
+    vec2r T(-n.y, n.x);
 
-    double sum = Particles[i].radius + Particles[j].radius;
-    if (norm2(branch) <= sum * sum) { // it means that i and j are in contact
+    double len = n.normalize();
+    double dn  = len - Particles[i].radius - Particles[j].radius;
+    double vn  = realVel * n;
 
-      // real relative velocities
-      vec2r realVel = Particles[j].vel - Particles[i].vel; // Does not account for rotation yet
+    double Ri    = Particles[i].radius + 0.5 * dn;
+    double Rj    = Particles[j].radius + 0.5 * dn;
 
-      // Normal force (elastic + viscuous)
-      vec2r n    = branch;
-      double len = n.normalize();
-      double dn  = len - Particles[i].radius - Particles[j].radius;
-      double vn  = realVel * n;
-      double fne = -Interactions[k].kn * dn;
-      double fnv = -Interactions[k].damp * vn;
-      //
-      Interactions[k].fn = fne + fnv;
-      if (Interactions[k].fn < 0.0) { Interactions[k].fn = 0.0; }
+    if (Interactions[k].bond) { // i and j are bonded
 
-      // Tangential force (friction)
-      vec2r T(-n.y, n.x);
-      double Ri    = Particles[i].radius + 0.5 * dn;
-      double Rj    = Particles[j].radius + 0.5 * dn;
-      double vijt  = realVel * T - Particles[i].vrot * Ri - Particles[j].vrot * Rj;
-      double ft    = Interactions[k].ft - Interactions[k].kt * dt * vijt;
-      double ftest = Interactions[k].mu * Interactions[k].fn;
-      if (fabs(ft) > ftest) { ft = (ft > 0.0) ? ftest : -ftest; }
-      Interactions[k].ft = ft;
+      // calculate the bonded forces
 
-      // .... other force laws
+      double fnb = -Interactions[k].kn * (dn -Interactions[k].dn0) ;
 
-      // Resultant force and moment
-      vec2r f = Interactions[k].fn * n + Interactions[k].ft * T;
-      Particles[i].force -= f;
-      Particles[j].force += f;
-      Particles[i].moment -= ft * Ri;
-      Particles[j].moment -= ft * Rj;
+      //double vijt  = realVel * T - Particles[i].vrot * Ri - Particles[j].vrot * Rj;
+      //ftb    = Interactions[k].ft - Interactions[k].kt * dt * vijt;
 
-      // Internal stress
-      Sig.xx += f.x * branch.x;
-      Sig.xy += f.x * branch.y;
-      Sig.yx += f.y * branch.x;
-      Sig.yy += f.y * branch.y;
+      // test if the bond breaks
+
+      Interactions[k].fnb = fnb;
+    }
+    else { // i and j not bonded
+      Interactions[k].fnb = 0;
+      Interactions[k].ftb = 0;
+    }
+
+    if (Interactions[k].bond && Interactions[k].solidbond) { // no friction contact when bonded
+      Interactions[k].fn = 0.0;
+      Interactions[k].ft = 0.0;
+    }
+    else { // friction
+
+      double sum = Particles[i].radius + Particles[j].radius;
+      if (norm2(branch) <= sum * sum) { // it means that i and j are in contact
+        
+
+        // Normal force (elastic + viscous)
+        double fne = -Interactions[k].kn * dn;
+        double fnv = -Interactions[k].damp * vn;
+        //
+        Interactions[k].fn = fne + fnv;
+        if (Interactions[k].fn < 0.0) { Interactions[k].fn = 0.0; }
+
+        // Tangential force (friction)
+        double vijt  = realVel * T - Particles[i].vrot * Ri - Particles[j].vrot * Rj;
+        double ft    = Interactions[k].ft - Interactions[k].kt * dt * vijt;
+        double ftest = Interactions[k].mu * Interactions[k].fn;
+        if (fabs(ft) > ftest) { ft = (ft > 0.0) ? ftest : -ftest; }
+        Interactions[k].ft = ft;
+      }
+
+
     } // if
+
+    // .... other force laws
+
+    // Resultant force and moment
+    vec2r f = (Interactions[k].fn + Interactions[k].fnb) * n + (Interactions[k].ft +Interactions[k].ftb) * T;
+    Particles[i].force -= f;
+    Particles[j].force += f;
+    Particles[i].moment -= (Interactions[k].ft +Interactions[k].ftb) * Ri;
+    Particles[j].moment -= (Interactions[k].ft +Interactions[k].ftb) * Rj;
+
+    // Internal stress
+    Sig.xx += f.x * branch.x;
+    Sig.xy += f.x * branch.y;
+    Sig.yx += f.y * branch.x;
+    Sig.yy += f.y * branch.y;
+    
   } // Loop over interactions
 }

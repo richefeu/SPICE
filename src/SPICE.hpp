@@ -53,6 +53,10 @@ public:
   double xmax{0.0};
   double ymin{0.0};
   double ymax{0.0};
+
+  bool solidbond;
+  double dmax;
+      
   
   bool verbose{false};
 
@@ -76,6 +80,10 @@ public:
   void updateYrange(); // ymin and ymax
   void updateTotalMass(); // massTot
   void updateSizeRange(); // Rmin and Rmax
+  
+  // Functions for updating particles or interactions
+  void activateBonds(bool solidbond, double dmax);
+
 
   void screenLog();
   

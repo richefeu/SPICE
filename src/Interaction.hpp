@@ -5,8 +5,12 @@
 struct Interaction {
   size_t i{0};
   size_t j{0};
+  bool bond{false};
+  bool solidbond{false};
   double fn{0.0};
+  double fnb{0.0};
   double ft{0.0};
+  double ftb{0.0};
   
   double meff{0.0};
   double kn{0.0};
@@ -16,7 +20,9 @@ struct Interaction {
   double fadh{0.0};
   //double XXX{0.0};
   double damp{0.0};
+  double Gs{0.0};
+  double dn0{0.0};
   
   Interaction();
-  Interaction(size_t I, size_t J/*, double Damp*/);
+  Interaction(size_t I, size_t J);
 };

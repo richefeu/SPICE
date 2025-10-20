@@ -155,6 +155,14 @@ void readJsonFile(const char *filename, pacOptionsManager &pacOptionsM, packingM
         propertiesM.tangentialStiffness.setConstant(1e8);
         propertiesM.hasTangentialStiffness = false;
       }
+
+      if (j["properties-manager"].contains("normalViscDampingRate")) {
+        propertiesM.normalViscDampingRate.readJson(j["properties-manager"]["normalViscDampingRate"]);
+        propertiesM.hasNormalViscDampingRate = true;
+      } else {
+        propertiesM.tangentialStiffness.setConstant(1e8);
+        propertiesM.hasNormalViscDampingRate = false;
+      }
     }
 
   } catch (const nlohmann::json::parse_error &e) {

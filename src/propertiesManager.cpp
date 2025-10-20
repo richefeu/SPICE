@@ -40,7 +40,7 @@ void propertiesManager::process(SPICE &box) {
       box.Particles[i].tangentialStiffness = tangentialStiffness.getValueAt(relativeHeight);
     }
   } else {
-    if (box.verbose) { std::cout << SPICE_WARN << "No normal stiffness has been set" << std::endl; }
+    if (box.verbose) { std::cout << SPICE_WARN << "No tangential stiffness has been set" << std::endl; }
   }
 
   if (hasNormalViscDampingRate) {
