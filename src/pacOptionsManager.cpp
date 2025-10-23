@@ -1,6 +1,7 @@
 #include "pacOptionsManager.hpp"
 
 void pacOptionsManager::process(SPICE &box) {
+  if (!needProcess) { return; }
 
   box.verbose    = verbose;
   box.gravity    = gravity;

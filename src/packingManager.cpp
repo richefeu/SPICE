@@ -1,7 +1,11 @@
 #include "packingManager.hpp"
 
 void packingManager::process(SPICE &box) {
-  if (option == "grid") {
+  if (!needProcess) { return; }
+  
+  if (option == "nothing-to-do") {
+    return;
+  } else if (option == "grid") {
     grid(box);
   } else if (option == "geo-deposite") {
     geoDeposite(box);
@@ -12,7 +16,7 @@ void packingManager::process(SPICE &box) {
 
 // TODO: addedGap (it could be usefull)
 //  initial pertuabation (displacement within addedGap)
-//. initial perturbation (velocities)
+//  initial perturbation (velocities)
 void packingManager::grid(SPICE &box) {
 
   Particle P;
@@ -20,8 +24,8 @@ void packingManager::grid(SPICE &box) {
 
   int ngw = (int)nx;
   int ngh = (int)ny;
-  std::cout << "nx =  " << ngw << std::endl;
-  std::cout << "ny =  " << ngh << std::endl;
+  std::cout << "nx = " << ngw << std::endl;
+  std::cout << "ny = " << ngh << std::endl;
 
   double rvarMax = radiusVariation.getMaxValue();
   double rmax    = radius.getMaxValue() + rvarMax; // + addedGap

@@ -6,7 +6,6 @@
 // toofus headers
 #include "fileTool.hpp"
 #include "propertyProfile.hpp"
-//#include "toofus-gate/nlohmann/json.hpp"
 
 int main(int argc, char const *argv[]) {
 
@@ -50,6 +49,7 @@ void readJsonFile(const char *filename, pacOptionsManager &pacOptionsM, packingM
 
     // --------------------------------------------
     if (j.contains("pac-options")) {
+      pacOptionsM.needProcess = true;
       pacOptionsM.generatedFileName = j["pac-options"].value("generated-file-name", pacOptionsM.generatedFileName);
       if (pacOptionsM.verbose) {
         std::cout << SPICE_INFO << "generated file name: " << pacOptionsM.generatedFileName << std::endl;
@@ -81,6 +81,7 @@ void readJsonFile(const char *filename, pacOptionsManager &pacOptionsM, packingM
 
     // --------------------------------------------
     if (j.contains("packing-manager")) {
+      packingM.needProcess = true;
       packingM.option  = j["packing-manager"].value("option", packingM.option);
       packingM.nx      = j["packing-manager"].value("nx", packingM.nx);
       packingM.ny      = j["packing-manager"].value("ny", packingM.ny);
@@ -115,6 +116,7 @@ void readJsonFile(const char *filename, pacOptionsManager &pacOptionsM, packingM
 
     // --------------------------------------------
     if (j.contains("far-connection-manager")) {
+      farConnectionM.needProcess = true;
       farConnectionM.option    = j["far-connection-manager"].value("option", farConnectionM.option);
       farConnectionM.location  = j["far-connection-manager"].value("location", farConnectionM.location);
       farConnectionM.thickness = j["far-connection-manager"].value("thickness", farConnectionM.thickness);
@@ -124,6 +126,8 @@ void readJsonFile(const char *filename, pacOptionsManager &pacOptionsM, packingM
 
     // --------------------------------------------
     if (j.contains("properties-manager")) {
+      propertiesM.needProcess = true;
+      
       if (j["properties-manager"].contains("density")) {
         propertiesM.density.readJson(j["properties-manager"]["density"]);
         propertiesM.hasDensity = true;

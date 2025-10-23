@@ -410,13 +410,6 @@ void SPICE::combineParameters() {
 // ---------------------------------------------------------
 void SPICE::resetCloseList(double dmax) {
   // store ft because the list will be erased before being rebuilt
-  /*
-  struct ftbak_t {
-    size_t i, j;
-    double ft;
-  };
-  */
-
   std::vector<Interaction> storedInteractions;
   for (size_t k = 0; k < Interactions.size(); ++k) { storedInteractions.push_back(Interactions[k]); }
 
@@ -449,7 +442,6 @@ void SPICE::resetCloseList(double dmax) {
     if (kold == storedInteractions.size()) { break; }
 
     if (storedInteractions[kold].i == Interactions[k].i && storedInteractions[kold].j == Interactions[k].j) {
-      // Interactions[k].ft = ftbak[kold].ft;
       Interactions[k] = storedInteractions[kold];
       ++kold;
     }

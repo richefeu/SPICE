@@ -18,4 +18,5 @@ public:
   double dVerlet{1.0};
   
   void process(SPICE & box);
+  bool needProcess{false};
 };

@@ -15,8 +15,7 @@ ifeq ($(UNAME_S),Darwin)
 	GLFLAGS = `pkg-config --cflags gl glu glut`	
 	# on apple, use brew to install freeglut and mesa-glu
 	
-  #VTK_CFLAGS  = `pkg-config --cflags vtk`
-  #VTK_LDFLAGS = `pkg-config --libs vtk`
+	# Actually, it does not compile (yet) on mac
   VTK_CFLAGS  = -I /opt/homebrew/Cellar/vtk/9.5.2/include/vtk-9.5
   VTK_LDFLAGS = -L /opt/homebrew/Cellar/vtk/9.5.2/lib -lvtkCommonCore-9.5 -lvtkCommonDataModel-9.5 \
 	 -lvtkIOXML-9.5 -lvtkIOCore-9.5
@@ -31,7 +30,6 @@ else
   VTK_CFLAGS = -I/usr/include/vtk-9.1
   VTK_LDFLAGS = -lvtkCommonCore-9.1 -lvtkCommonDataModel-9.1 -lvtkIOXML-9.1 -lvtkIOCore-9.1	
 endif
-
 
 
 # Ensure the toofus directory exists

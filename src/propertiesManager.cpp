@@ -1,6 +1,7 @@
 #include "propertiesManager.hpp"
 
 void propertiesManager::process(SPICE &box) {
+  if (!needProcess) { return; }
 
   if (box.Particles.empty()) {
     std::cout << SPICE_WARN << "You need to add particles to be able to set their properties" << std::endl;

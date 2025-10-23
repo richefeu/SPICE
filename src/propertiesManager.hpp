@@ -26,4 +26,5 @@ public:
   propertyProfile<double> GcGlue;
 
   void process(SPICE &box);
+  bool needProcess{false};
 };

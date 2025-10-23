@@ -33,7 +33,7 @@ void printHelp() {
 }
 
 void printInfo() {
-  int V = glutGet(GLUT_VERSION);
+  int V  = glutGet(GLUT_VERSION);
   int V1 = V / 10000;
   int V2 = (V - V1 * 10000) / 100;
   int V3 = V - V1 * 10000 - V2 * 100;
@@ -43,35 +43,17 @@ void printInfo() {
 void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
   switch (Key) {
 
-    /*
   case '0': {
-    color_option = 0;
+    setColorOption(COLOR_NONE);
   } break;
 
   case '1': { // particle pressures
-    double pmin = pdata[0].p;
-    double pmax = pdata[0].p;
-    for (size_t i = 1; i < pdata.size(); i++) {
-      if (pdata[i].p < pmin) {
-        pmin = pdata[i].p;
-      }
-      if (pdata[i].p > pmax) {
-        pmax = pdata[i].p;
-      }
-    }
-    colorTable.setMinMax(pmin, pmax);
-    colorTable.setTableID(2);
-    colorTable.Rebuild();
-    color_option = 1;
+    setColorOption(COLOR_RADIUS);
   } break;
 
-  case '2': {
-    // colorTable.setMinMax(pmin, pmax);
-    colorTable.setTableID(2);
-    colorTable.Rebuild();
-    color_option = 2;
+  case '2': { // particle pressures
+    setColorOption(COLOR_VELOCITY_MAGNITUDE);
   } break;
-  */
 
   case 'a': {
     alpha_particles = std::max(0.0f, alpha_particles - 0.05f);
@@ -89,13 +71,7 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
     } break;
     */
 
-    /*
-    case 'c': {
-      show_cell = 1 - show_cell;
-    } break;
-    */
-
-  case 'C': {
+  case 'c': {
     show_contacts = 1 - show_contacts;
   } break;
 
@@ -103,11 +79,9 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
     show_forces = 1 - show_forces;
   } break;
 
-    /*
-    case 'g': {
-      show_ghosts = 1 - show_ghosts;
-    } break;
-  */
+  case 'g': {
+    show_ghosts = 1 - show_ghosts;
+  } break;
 
   case 'h': {
     printHelp();
@@ -142,14 +116,11 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
 
   case 's': {
     vScale *= 0.95;
-    if (vScale < 0.0)
-      vScale = 1.0;
+    if (vScale < 0.0) vScale = 1.0;
   } break;
 
   case '-': {
-    if (confNum > 0) {
-      try_to_readConf(confNum - 1, Conf, confNum);
-    }
+    if (confNum > 0) { try_to_readConf(confNum - 1, Conf, confNum); }
     updateTextLine();
   } break;
 
@@ -167,7 +138,9 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
   glutPostRedisplay();
 }
 
-void updateTextLine() { textZone.addLine("conf %d,  t %0.4g s", confNum, Conf.t); }
+void updateTextLine() {
+  textZone.addLine("conf %d,  t %0.4g s", confNum, Conf.t);
+}
 
 void mouse(int button, int state, int x, int y) {
 
@@ -195,9 +168,7 @@ void mouse(int button, int state, int x, int y) {
 
 void motion(int x, int y) {
 
-  if (mouse_mode == NOTHING) {
-    return;
-  }
+  if (mouse_mode == NOTHING) { return; }
 
   double dx = (double)(x - mouse_start[0]) / (double)width;
   double dy = (double)(y - mouse_start[1]) / (double)height;
@@ -229,7 +200,6 @@ void motion(int x, int y) {
   mouse_start[1] = y;
 
   reshape(width, height);
-  // display();
   glutPostRedisplay();
 }
 
@@ -240,29 +210,12 @@ void display() {
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();
 
-  if (show_period == 1) {
-    drawPeriod();
-  }
-  
- 
-
-  if (show_particles == 1) {
-    drawParticles();
-  }
-  
-  if (1) {
-  	drawFarSprings();
-  }
-
-  /*
-  if (show_contacts == 1) {
-    drawContacts();
-  }
-
-  if (show_forces == 1) {
-    drawForces();
-  }
-  */
+  if (show_period == 1) { drawPeriod(); }
+  if (show_particles == 1) { drawParticles(); }
+  if (show_ghosts == 1) { drawGhosts(); }
+  if (1) { drawFarSprings(); }
+  if (show_contacts == 1) { drawContacts(); }
+  if (show_forces == 1) { drawForces(); }
 
   textZone.draw();
 
@@ -294,12 +247,12 @@ void fit_view() {
   for (size_t i = 0; i < Conf.Particles.size(); ++i) {
 
     vec2r pos = Conf.Particles[i].pos;
-    double R = Conf.Particles[i].radius;
+    double R  = Conf.Particles[i].radius;
 
-    double xmin = pos.x - R;
-    double xmax = pos.x + R;
-    double ymin = pos.y - R;
-    double ymax = pos.y + R;
+    double xmin    = pos.x - R;
+    double xmax    = pos.x + R;
+    double ymin    = pos.y - R;
+    double ymax    = pos.y + R;
     worldBox.min.x = std::min(worldBox.min.x, xmin);
     worldBox.min.y = std::min(worldBox.min.y, ymin);
     worldBox.max.x = std::max(worldBox.max.x, xmax);
@@ -310,17 +263,17 @@ void fit_view() {
 }
 
 void reshape(int w, int h) {
-  width = w;
+  width  = w;
   height = h;
 
-  double left = worldBox.min.x;
-  double right = worldBox.max.x;
+  double left   = worldBox.min.x;
+  double right  = worldBox.max.x;
   double bottom = worldBox.min.y;
-  double top = worldBox.max.y;
+  double top    = worldBox.max.y;
   double worldW = right - left;
   double worldH = top - bottom;
-  double dW = 0.1 * worldW;
-  double dH = 0.1 * worldH;
+  double dW     = 0.1 * worldW;
+  double dH     = 0.1 * worldH;
   left -= dW;
   right += dW;
   top += dH;
@@ -330,12 +283,12 @@ void reshape(int w, int h) {
 
   if (worldW > worldH) {
     worldH = worldW * ((GLfloat)height / (GLfloat)width);
-    top = 0.5 * (bottom + top + worldH);
+    top    = 0.5 * (bottom + top + worldH);
     bottom = top - worldH;
   } else {
     worldW = worldH * ((GLfloat)width / (GLfloat)height);
-    right = 0.5 * (left + right + worldW);
-    left = right - worldW;
+    right  = 0.5 * (left + right + worldW);
+    left   = right - worldW;
   }
 
   glViewport(0, 0, width, height);
@@ -346,31 +299,52 @@ void reshape(int w, int h) {
   glutPostRedisplay();
 }
 
-void setColor(int /*i*/, GLfloat alpha) {
-  switch (color_option) {
+// set and compute the colors
+void setColorOption(int option) {
+  particle_color_option = option;
+  color_values.resize(Conf.Particles.size(), 0.0);
 
-  case 0: {
-    glColor4f(0.8f, 0.8f, 0.9f, alpha);
+  switch (particle_color_option) {
+  case COLOR_NONE: {
+
+  } break;
+  case COLOR_RADIUS: {
+    double Rmin = Conf.Particles[0].radius;
+    double Rmax = Rmin;
+    for (size_t i = 0; i < Conf.Particles.size(); ++i) {
+      double R        = Conf.Particles[i].radius;
+      color_values[i] = R;
+      if (R < Rmin) { Rmin = R; }
+      if (R > Rmax) { Rmax = R; }
+    }
+    colorTable.setMinMax(Rmin, Rmax);
   } break;
 
-  case 1: { // pressure
-    // colorRGBA col;
-    // colorTable.getRGB(pdata[i].p, &col);
-    // glColor4f(col.r / 255.0, col.g / 255.0, col.b / 255.0, 1.0f);
+  case COLOR_VELOCITY_MAGNITUDE: {
+    double Vmin = 0.0;
+    double Vmax = 0.0;
+    for (size_t i = 0; i < Conf.Particles.size(); ++i) {
+      double V        = sqrt(Conf.Particles[i].vel * Conf.Particles[i].vel);
+      color_values[i] = V;
+      if (V < Vmin) { Vmin = V; }
+      if (V > Vmax) { Vmax = V; }
+    }
+    colorTable.setMinMax(Vmin, Vmax);
   } break;
 
-  case 2: {
-    /*
-    colorRGBA col;
-    colorTable.getRGB(Conf.grains[i].zncc2, &col);
-    glColor4f(col.r / 255.0, col.g / 255.0, col.b / 255.0, 1.0f);
-    */
-  } break;
-
-  default: {
-    glColor4f(0.8f, 0.8f, 0.9f, alpha);
-  } break;
+  default:
+    break;
   }
+}
+
+void setColor(int i, GLfloat alpha) {
+  colorRGBA col;
+  if (particle_color_option == COLOR_NONE) {
+    col.r = col.g = col.b = 200;
+  } else {
+    colorTable.getRGB(color_values[i], &col);
+  }
+  glColor4f(col.r / 255.0, col.g / 255.0, col.b / 255.0, alpha);
 }
 
 void drawPeriod() {
@@ -385,9 +359,6 @@ void drawPeriod() {
 }
 
 void drawFarSprings() {
-	
-	//std::cout << Conf.bottom.Idx.size() << std::endl;
-	
   glColor4f(0.0f, 0.0f, 0.0f, 1.0f);
   glLineWidth(1.0f);
   size_t idx;
@@ -397,7 +368,7 @@ void drawFarSprings() {
   for (size_t i = 0; i < Conf.bottom.Idx.size(); ++i) {
     idx = Conf.bottom.Idx[i];
     pos = Conf.bottom.pos[i];
-    l = 0.25 * Conf.Particles[idx].radius;
+    l   = 0.25 * Conf.Particles[idx].radius;
     glVertex2f(pos.x - l, pos.y - l);
     glVertex2f(pos.x + l, pos.y + l);
     glVertex2f(pos.x - l, pos.y + l);
@@ -406,11 +377,11 @@ void drawFarSprings() {
     glVertex2f(pos.x, pos.y);
     glVertex2f(Conf.Particles[idx].pos.x, Conf.Particles[idx].pos.y);
   }
-  
+
   for (size_t i = 0; i < Conf.top.Idx.size(); ++i) {
     idx = Conf.top.Idx[i];
     pos = Conf.top.pos[i];
-    l = 0.25 * Conf.Particles[idx].radius;
+    l   = 0.25 * Conf.Particles[idx].radius;
     glVertex2f(pos.x - l, pos.y - l);
     glVertex2f(pos.x + l, pos.y + l);
     glVertex2f(pos.x - l, pos.y + l);
@@ -423,15 +394,13 @@ void drawFarSprings() {
 }
 
 void drawParticles() {
-  if (mouse_mode != NOTHING) {
-    return;
-  }
+  if (mouse_mode != NOTHING) { return; }
 
   glLineWidth(1.0f);
 
   for (size_t i = 0; i < Conf.Particles.size(); ++i) {
     vec2r pos = Conf.Particles[i].pos;
-    double R = Conf.Particles[i].radius;
+    double R  = Conf.Particles[i].radius;
 
     setColor(i, alpha_particles);
     glBegin(GL_POLYGON);
@@ -457,21 +426,67 @@ void drawParticles() {
   }
 }
 
-void drawContacts() {
-  if (mouse_mode != NOTHING) {
-    return;
+void drawGhosts() {
+  if (mouse_mode != NOTHING) { return; }
+
+  glLineWidth(1.0f);
+  double Xmid = 0.5 * (Conf.xmin + Conf.xmax);
+  double L    = Conf.xmax - Conf.xmin;
+
+  for (size_t i = 0; i < Conf.Particles.size(); ++i) {
+    vec2r pos = Conf.Particles[i].pos;
+    double R  = Conf.Particles[i].radius;
+
+    glColor4f(0.8f, 0.8f, 0.8f, alpha_particles);
+
+    double X = pos.x;
+    if (X > Xmid) {
+      X -= L;
+    } else {
+      X += L;
+    }
+
+    glBegin(GL_POLYGON);
+    for (double angle = 0.0; angle < 2.0 * M_PI; angle += 0.05 * M_PI) {
+      glVertex2f(X + R * cos(angle), pos.y + R * sin(angle));
+    }
+    glEnd();
+
+    glColor4f(0.0f, 0.0f, 0.0f, alpha_particles);
+    glBegin(GL_LINE_LOOP);
+    for (double angle = 0.0; angle < 2.0 * M_PI; angle += 0.05 * M_PI) {
+      glVertex2f(X + R * cos(angle), pos.y + R * sin(angle));
+    }
+    glEnd();
+
+    if (showOrientations) {
+      double rot = Conf.Particles[i].rot;
+      glBegin(GL_LINES);
+      glVertex2f(X, pos.y);
+      glVertex2f(X + R * cos(rot), pos.y + R * sin(rot));
+      glEnd();
+    }
   }
+}
+
+void drawContacts() {
+  if (mouse_mode != NOTHING) { return; }
 
   glLineWidth(1.5f);
+  // double Xmid = 0.5 * (Conf.xmin + Conf.xmax);
+  double L     = Conf.xmax - Conf.xmin;
+  double halfL = 0.5 * L;
 
   // grain-grain
   glColor4f(0.0f, 0.0f, 1.0f, 1.0f);
   glBegin(GL_LINES);
   for (size_t k = 0; k < Conf.Interactions.size(); ++k) {
-    size_t i = Conf.Interactions[k].i;
-    size_t j = Conf.Interactions[k].j;
-    vec2r posi = /*Conf.Cell.h * */ Conf.Particles[i].pos;
-    vec2r sij = Conf.Particles[j].pos - Conf.Particles[i].pos;
+    size_t i   = Conf.Interactions[k].i;
+    size_t j   = Conf.Interactions[k].j;
+    vec2r posi = Conf.Particles[i].pos;
+    vec2r sij  = Conf.Particles[j].pos - Conf.Particles[i].pos;
+    if (sij.x >halfL) {sij.x -= L;}
+    else if (sij.x < -halfL) {sij.x += L;}
     vec2r posj = posi + sij;
     glVertex2f(posi.x, posi.y);
     glVertex2f(posj.x, posj.y);
@@ -481,18 +496,16 @@ void drawContacts() {
 
 // remove periodic things
 void drawForces() {
-  if (mouse_mode != NOTHING) {
-    return;
-  }
+  if (mouse_mode != NOTHING) { return; }
 
   // grain-grain
   glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
 
   for (size_t k = 0; k < Conf.Interactions.size(); ++k) {
-    size_t i = Conf.Interactions[k].i;
-    size_t j = Conf.Interactions[k].j;
+    size_t i   = Conf.Interactions[k].i;
+    size_t j   = Conf.Interactions[k].j;
     vec2r posi = Conf.Particles[i].pos;
-    vec2r sij = Conf.Particles[j].pos - Conf.Particles[i].pos;
+    vec2r sij  = Conf.Particles[j].pos - Conf.Particles[i].pos;
     vec2r posj = posi + sij;
 
     // Calculate the width of the rectangle
@@ -529,6 +542,7 @@ bool try_to_readConf(int num, SPICE &CF, int &OKNum) {
     OKNum = num;
     CF.loadConf(file_name);
     CF.accelerations();
+    setColorOption(particle_color_option);
     return true;
   } else {
     std::cout << file_name << " does not exist" << std::endl;
@@ -592,6 +606,7 @@ int main(int argc, char *argv[]) {
       try_to_readConf(confNum, Conf, confNum);
     } else {
       Conf.loadConf(argv[1]);
+      setColorOption(particle_color_option);
       std::cout << "Current Configuration: " << argv[1] << std::endl;
       confNum = Conf.iconf;
     }

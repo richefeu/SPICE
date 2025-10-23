@@ -13,4 +13,5 @@ public:
   double viscosity{0.0};
   
   void process(SPICE & box);
+  bool needProcess{false};
 };
