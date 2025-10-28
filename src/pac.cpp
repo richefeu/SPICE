@@ -1,12 +1,5 @@
 #include "pac.hpp"
 
-#include <fstream>
-#include <iostream>
-
-// toofus headers
-#include "fileTool.hpp"
-#include "propertyProfile.hpp"
-
 int main(int argc, char const *argv[]) {
 
   if (argc != 2) {
@@ -50,6 +43,7 @@ void readJsonFile(const char *filename, pacOptionsManager &pacOptionsM, packingM
     // --------------------------------------------
     if (j.contains("pac-options")) {
       pacOptionsM.needProcess = true;
+
       pacOptionsM.generatedFileName = j["pac-options"].value("generated-file-name", pacOptionsM.generatedFileName);
       if (pacOptionsM.verbose) {
         std::cout << SPICE_INFO << "generated file name: " << pacOptionsM.generatedFileName << std::endl;
@@ -62,6 +56,7 @@ void readJsonFile(const char *filename, pacOptionsManager &pacOptionsM, packingM
       std::vector<double> G = j["pac-options"].value("gravity", Gdefault);
       pacOptionsM.gravity.x = G[0];
       pacOptionsM.gravity.y = G[1];
+      pacOptionsM.inclination = j["pac-options"].value("inclination-degree", pacOptionsM.inclination);
 
       pacOptionsM.t    = j["pac-options"].value("time", pacOptionsM.t);
       pacOptionsM.tmax = j["pac-options"].value("end-time", pacOptionsM.tmax);
@@ -86,19 +81,17 @@ void readJsonFile(const char *filename, pacOptionsManager &pacOptionsM, packingM
       packingM.nx      = j["packing-manager"].value("nx", packingM.nx);
       packingM.ny      = j["packing-manager"].value("ny", packingM.ny);
       packingM.density = j["packing-manager"].value("density", packingM.density);
-      packingM.includeFarConnection =
-          j["packing-manager"].value("include-far-connection", packingM.includeFarConnection);
+      packingM.includeConnections =
+          j["packing-manager"].value("include-connections", packingM.includeConnections);
 
       packingM.bottomNumber = j["packing-manager"].value("add-bottom-chain", 0);
       if (packingM.bottomNumber > 0) {
         packingM.hasBottomLine = true;
-        // packingM.bottomThickness = 2.0 * bottomRadius;
       }
 
       packingM.topNumber = j["packing-manager"].value("add-top-chain", 0);
       if (packingM.topNumber > 0) {
         packingM.hasTopLine = true;
-        // packingM.topThickness = 2.0 * topRadius;
       }
 
       if (j["packing-manager"].contains("radius")) {
@@ -127,7 +120,7 @@ void readJsonFile(const char *filename, pacOptionsManager &pacOptionsM, packingM
     // --------------------------------------------
     if (j.contains("properties-manager")) {
       propertiesM.needProcess = true;
-      
+
       if (j["properties-manager"].contains("density")) {
         propertiesM.density.readJson(j["properties-manager"]["density"]);
         propertiesM.hasDensity = true;

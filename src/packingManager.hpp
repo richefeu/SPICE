@@ -13,7 +13,7 @@ public:
   propertyProfile<double> radius;
   propertyProfile<double> radiusVariation;
   double density{2700.0};
-  bool includeFarConnection{true};
+  bool includeConnections{true};
   bool hasBottomLine{false};
   bool hasTopLine{false};
   int bottomNumber{0};

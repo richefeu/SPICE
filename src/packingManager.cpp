@@ -2,7 +2,7 @@
 
 void packingManager::process(SPICE &box) {
   if (!needProcess) { return; }
-  
+
   if (option == "nothing-to-do") {
     return;
   } else if (option == "grid") {
@@ -81,21 +81,6 @@ void packingManager::grid(SPICE &box) {
     }
   }
 
-  // recompute bounding box
-  /*
-  from.set(1e20, 1e20);
-  to.set(-1e20, -1e20);
-  vec2r diag(1.0, 1.0);
-  for (size_t i = 0; i < box.Particles.size(); i++) {
-    vec2r pmin = box.Particles[i].pos - rmax * diag;
-    vec2r pmax = box.Particles[i].pos + rmax * diag;
-    if (from.x > pmin.x) { from.x = pmin.x; }
-    if (from.y > pmin.y) { from.y = pmin.y; }
-    if (to.x < pmax.x) { to.x = pmax.x; }
-    if (to.y < pmax.y) { to.y = pmax.y; }
-  }
-  */
-
   // period in x direction
   box.xmin = from.x;
   box.xmax = to.x;
@@ -104,7 +89,6 @@ void packingManager::grid(SPICE &box) {
   to.y   = box.ymax;
 
   // recompute the radius, mass properties
-  // double massTot = 0.0;
   for (size_t i = idFirst; i < idLast; i++) {
     double relativeHeight = (box.Particles[i].pos.y - box.ymin) / (box.ymax - box.ymin);
     double R              = radius.getValueAt(relativeHeight);
@@ -113,44 +97,40 @@ void packingManager::grid(SPICE &box) {
     R += Rvar;
     box.Particles[i].radius = R;
     box.Particles[i].mass   = M_PI * R * R * density;
-    // massTot += box.Particles[i].mass;
     box.Particles[i].inertia = 0.5 * box.Particles[i].mass * R * R;
   }
 
   // Far field attached particles
-  if (includeFarConnection) {
+  if (includeConnections) {
     box.bottom.Idx.clear();
     box.bottom.pos.clear();
     box.top.Idx.clear();
     box.top.pos.clear();
 
     double bottomThickness = 2.0 * rmax;
-    if (hasBottomLine) { bottomThickness = to.x / (double)bottomNumber; }
+    if (hasBottomLine) {
+      bottomThickness = to.x / (double)bottomNumber;
+
+      for (size_t i = 0; i < box.Particles.size(); i++) {
+        if (box.Particles[i].pos.y < from.y + bottomThickness) {
+          box.bottom.Idx.push_back(i);
+          box.bottom.pos.push_back(box.Particles[i].pos);
+        }
+      }
+    }
 
     double topThickness = 2.0 * rmax;
-    if (hasTopLine) { topThickness = to.x / (double)topNumber; }
+    if (hasTopLine) {
+      topThickness = to.x / (double)topNumber;
 
-    for (size_t i = 0; i < box.Particles.size(); i++) {
-      if (box.Particles[i].pos.y < from.y + bottomThickness) {
-        box.bottom.Idx.push_back(i);
-        box.bottom.pos.push_back(box.Particles[i].pos);
-      } else if (box.Particles[i].pos.y > to.y - topThickness) {
-        box.top.Idx.push_back(i);
-        box.top.pos.push_back(box.Particles[i].pos);
+      for (size_t i = 0; i < box.Particles.size(); i++) {
+        if (box.Particles[i].pos.y > to.y - topThickness) {
+          box.top.Idx.push_back(i);
+          box.top.pos.push_back(box.Particles[i].pos);
+        }
       }
     }
   }
-
-  // Set ramdom velocities to particles
-  /*
-  double vmax = 0.1;
-  std::cout << "Norm of ramdom velocities? ";
-  std::cin >> vmax;
-  for (size_t i = 0; i < Particles.size(); i++) {
-    Particles[i].vel.x = vmax * (static_cast<float>(rand()) / static_cast<float>(RAND_MAX));
-    Particles[i].vel.y = vmax * (static_cast<float>(rand()) / static_cast<float>(RAND_MAX));
-  }
-  */
 }
 
 // FIXME: not sure we will implement it

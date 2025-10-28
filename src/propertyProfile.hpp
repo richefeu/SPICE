@@ -5,7 +5,7 @@
 #include <iostream>
 #include <vector>
 
-#include "toofus-gate/nlohmann/json.hpp"
+#include "toofus/toofus-gate/nlohmann/json.hpp"
 
 template <typename T> class propertyProfile {
 public:
@@ -42,8 +42,15 @@ public:
     }
   }
 
-  void readStream(std::istream & is) {
-    // TODO
+  void readStream(std::istream &is) {
+    values.clear();
+    size_t nbPoints{0};
+    is >> nbPoints;
+    double X, Y;
+    for (size_t n = 0; n < nbPoints; ++n) {
+      is >> X >> Y;
+      values.push_back({X, Y});
+    }
   }
 
   // Sorts the 'values' in ascending order of x
@@ -107,8 +114,7 @@ public:
 
   // Overload the << operator to print the propertyProfile
   friend std::ostream &operator<<(std::ostream &os, const propertyProfile<T> &profile) {
-    os << "propertyProfile values:\n";
-    for (const auto &entry : profile.values) { os << "  (x: " << entry[0] << ", y: " << entry[1] << ")\n"; }
+    for (const auto &entry : profile.values) { os << "(x: " << entry[0] << ", y: " << entry[1] << ") "; }
     return os;
   }
 };

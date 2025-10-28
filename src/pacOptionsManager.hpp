@@ -9,6 +9,7 @@ public:
   std::string loading{"!!! TO BE DEFINED"};
   bool verbose{true};
   vec2r gravity{0, 9.81};
+  double inclination{0.0}; 
   double t{0.0};
   double tmax{1.0};
   double dt{1e-6};

@@ -2,7 +2,7 @@
 
 #include <vector>
 
-#include "vec2.hpp"
+#include "toofus/vec2.hpp"
 
 // A disk particle
 struct Particle {

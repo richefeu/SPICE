@@ -3,8 +3,19 @@
 void pacOptionsManager::process(SPICE &box) {
   if (!needProcess) { return; }
 
-  box.verbose    = verbose;
-  box.gravity    = gravity;
+  box.verbose = verbose;
+  
+  if (inclination == 0.0) {
+    box.gravity = gravity;
+  } else {
+    double g = norm(gravity);
+    std::cout << SPICE_INFO << "Inclination of the gravity: " << inclination << " degrees (norm = " << g << ")"
+              << std::endl;
+    box.gravity.x = sin(inclination * M_PI / 180.0) * g;
+    box.gravity.y = -cos(inclination * M_PI / 180.0) * g;
+    std::cout << SPICE_INFO << "Results in gravity: " << box.gravity << std::endl;
+  }
+
   box.t          = t;
   box.dt         = dt; // TODO: add possibility to set with portion of critical time step
   box.tmax       = tmax;

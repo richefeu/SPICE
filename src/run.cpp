@@ -18,10 +18,6 @@ int main(int argc, char const *argv[]) {
     }
   }
 
-  simu.saveConf(simu.iconf);
-  simu.screenLog();
-  simu.iconf++;
-
   simu.resetCloseList(simu.dVerlet);
   simu.integrate();
 

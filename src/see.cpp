@@ -62,17 +62,16 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
     alpha_particles = std::min(1.0f, alpha_particles + 0.05f);
   } break;
 
-    /*
-    case 'b': {
-      alpha_ghosts = std::max(0.0f, alpha_ghosts - 0.05f);
-    } break;
-    case 'B': {
-      alpha_ghosts = std::min(1.0f, alpha_ghosts + 0.05f);
-    } break;
-    */
+  case 'b': {
+    show_background = 1 - show_background;
+  } break;
 
   case 'c': {
     show_contacts = 1 - show_contacts;
+  } break;
+
+  case 'C': {
+    showConnectors = 1 - showConnectors;
   } break;
 
   case 'f': {
@@ -213,9 +212,15 @@ void display() {
   if (show_period == 1) { drawPeriod(); }
   if (show_particles == 1) { drawParticles(); }
   if (show_ghosts == 1) { drawGhosts(); }
-  if (1) { drawFarSprings(); }
+  if (showConnectors == 1) { drawConnectorSprings(); }
   if (show_contacts == 1) { drawContacts(); }
   if (show_forces == 1) { drawForces(); }
+  if (show_velocity_field == 1) { drawVelocityField(); }
+
+  if (particle_color_option > COLOR_NONE) { colorBar.show(width, height, colorTable); }
+
+  // profile devel
+  if (show_profile == 1) { selectProfileToDraw(); }
 
   textZone.draw();
 
@@ -224,35 +229,17 @@ void display() {
 }
 
 void fit_view() {
-  //
-  // 3 x ------- x 2
-  //   |         |
-  // 0 x ------- x 1
-  /*
-  double x0 = 0.0;
-  double y0 = 0.0;
-  double x1 = Conf.Cell.h.xy;
-  double y1 = Conf.Cell.h.yy;
-  double x2 = Conf.Cell.h.xy + Conf.Cell.h.xx;
-  double y2 = Conf.Cell.h.yy + Conf.Cell.h.yx;
-  double x3 = Conf.Cell.h.xx;
-  double y3 = Conf.Cell.h.yx;
-  worldBox.min.x = std::min(std::min(std::min(x0, x1), x2), x3);
-  worldBox.min.y = std::min(std::min(std::min(y0, y1), y2), y3);
-  worldBox.max.x = std::max(std::max(std::max(x0, x1), x2), x3);
-  worldBox.max.y = std::max(std::max(std::max(y0, y1), y2), y3);
-  */
-
-  // TODO: woldBox fit (use the Boundaries also ?)
+  // FIXME: woldBox fit (use the Boundaries also ?)
   for (size_t i = 0; i < Conf.Particles.size(); ++i) {
 
     vec2r pos = Conf.Particles[i].pos;
     double R  = Conf.Particles[i].radius;
 
-    double xmin    = pos.x - R;
-    double xmax    = pos.x + R;
-    double ymin    = pos.y - R;
-    double ymax    = pos.y + R;
+    double xmin = pos.x - R;
+    double xmax = pos.x + R;
+    double ymin = pos.y - R;
+    double ymax = pos.y + R;
+
     worldBox.min.x = std::min(worldBox.min.x, xmin);
     worldBox.min.y = std::min(worldBox.min.y, ymin);
     worldBox.max.x = std::max(worldBox.max.x, xmax);
@@ -299,25 +286,155 @@ void reshape(int w, int h) {
   glutPostRedisplay();
 }
 
-// set and compute the colors
+void selectProfileToDraw() {
+  double dH = 2.0 * Rmax;
+  double H  = Conf.ymax - Conf.ymin;
+  size_t N  = static_cast<size_t>(floor(H / dH));
+  std::vector<double> P, count;
+
+  // prepare the bins
+  for (size_t i = 0; i < N; i++) {
+    P.push_back(0.0);
+    count.push_back(0.0);
+  }
+
+  // generate the data
+  std::vector<double> data(Conf.Particles.size(), 0.0);
+  for (size_t i = 0; i < Conf.Particles.size(); ++i) {
+    switch (profile_option) {
+    case PROFILE_RADIUS: {
+      data[i] = Conf.Particles[i].radius;
+    } break;
+    case PROFILE_VELOCITY_X: {
+      data[i] = Conf.Particles[i].vel.x;
+    } break;
+
+    default:
+      break;
+    }
+  }
+
+  // count
+  for (size_t i = 0; i < Conf.Particles.size(); ++i) {
+    size_t pidx = static_cast<size_t>(floor(N * (Conf.Particles[i].pos.y - Conf.ymin) / H));
+    if (pidx >= N) { continue; }
+    P[pidx] += data[i];
+    count[pidx] += 1.0;
+  }
+
+  // normalize
+  for (size_t i = 0; i < N; i++) {
+    if (count[i] >= 2.0) P[i] /= count[i];
+  }
+
+  // compute variations and normalize
+  std::vector<double> V(P.size(), 0.0);
+  for (size_t i = 0; i < Conf.Particles.size(); ++i) {
+    size_t pidx = static_cast<size_t>(floor(N * (Conf.Particles[i].pos.y - Conf.ymin) / H));
+    V[pidx] += (data[i] - P[pidx]) * (data[i] - P[pidx]);
+  }
+  for (size_t i = 0; i < N; i++) {
+    if (count[i] >= 2.0) {
+      V[i] /= (count[i] - 1.0);
+      V[i] = sqrt(V[i]);
+    }
+  }
+
+  plotProfile(P, V);
+}
+
+void plotProfile(std::vector<double> &prof, std::vector<double> &var) {
+  size_t N = prof.size();
+  if (N < 2) { return; }
+
+  double valueMin = prof[0];
+  double valueMax = valueMin;
+  for (size_t i = 1; i < N; i++) {
+    if (prof[i] < valueMin) { valueMin = prof[i]; }
+    if (prof[i] > valueMax) { valueMax = prof[i]; }
+  }
+
+  double L     = 0.5 * (Conf.xmax - Conf.xmin);
+  double shift = 2 * Rmax;
+  if (show_ghosts == 1) shift += L;
+  double H  = Conf.ymax - Conf.ymin;
+  double dH = H / static_cast<double>(N);
+
+  double range = valueMax - valueMin;
+  if (range < 1e-20) { return; }
+  double scale = L / range;
+
+  glColor4f(0.0f, 0.0f, 0.0f, 1.0f);
+  glLineWidth(1.0f);
+
+  double shift0 = (valueMin < 0.0) ? valueMin : 0.0;
+  // axes
+  glBegin(GL_LINES);
+  glVertex2f(Conf.xmax + shift, Conf.ymin);
+  glVertex2f(Conf.xmax + shift + L, Conf.ymin);
+
+  glVertex2f(Conf.xmax + shift - shift0 * scale, Conf.ymin);
+  glVertex2f(Conf.xmax + shift - shift0 * scale, Conf.ymin + H);
+  glEnd();
+
+  // bins
+  glBegin(GL_LINES);
+  for (size_t i = 1; i < N; i++) {
+    glVertex2f(Conf.xmax + shift - shift0 * scale - Rmin, Conf.ymin + i * dH);
+    glVertex2f(Conf.xmax + shift - shift0 * scale + Rmin, Conf.ymin + i * dH);
+  }
+  glEnd();
+
+  // precompute coords
+  std::vector<double> xp, yp;
+  xp.push_back(Conf.xmax + shift + (prof[0] - valueMin) * scale);
+  yp.push_back(Conf.ymin + 0.5 * dH);
+  for (size_t i = 1; i < N; i++) {
+    xp.push_back(Conf.xmax + shift + (prof[i] - valueMin) * scale);
+    yp.push_back(Conf.ymin + 0.5 * dH + i * dH);
+  }
+
+  // the profile curve
+  glColor4f(0.0f, 0.0f, 1.0f, 0.5f);
+  glLineWidth(2.0f);
+  glBegin(GL_LINE_STRIP);
+  for (size_t i = 0; i < N; i++) { glVertex2f(xp[i], yp[i]); }
+  glEnd();
+
+  // points
+  glColor4f(0.3f, 0.3f, 0.3f, 1.0f);
+  glPointSize(6.0f);
+  glBegin(GL_POINTS);
+  for (size_t i = 0; i < N; i++) { glVertex2f(xp[i], yp[i]); }
+  glEnd();
+
+  // error bars
+  glLineWidth(1.0f);
+  glBegin(GL_LINES);
+  for (size_t i = 0; i < N; i++) {
+    glVertex2f(xp[i] - var[i] * scale, yp[i]);
+    glVertex2f(xp[i] + var[i] * scale, yp[i]);
+  }
+  glEnd();
+
+  // title
+  glText::print(Conf.xmax + shift, Conf.ymax + Rmean, 0.0f, "%s", profile_title.c_str());
+}
+
+// set and compute the colors of particles
 void setColorOption(int option) {
   particle_color_option = option;
   color_values.resize(Conf.Particles.size(), 0.0);
 
   switch (particle_color_option) {
   case COLOR_NONE: {
-
+    // nothing to do
   } break;
+
   case COLOR_RADIUS: {
-    double Rmin = Conf.Particles[0].radius;
-    double Rmax = Rmin;
-    for (size_t i = 0; i < Conf.Particles.size(); ++i) {
-      double R        = Conf.Particles[i].radius;
-      color_values[i] = R;
-      if (R < Rmin) { Rmin = R; }
-      if (R > Rmax) { Rmax = R; }
-    }
+    for (size_t i = 0; i < Conf.Particles.size(); ++i) { color_values[i] = Conf.Particles[i].radius; }
     colorTable.setMinMax(Rmin, Rmax);
+    colorBar.setTitle("Radius");
   } break;
 
   case COLOR_VELOCITY_MAGNITUDE: {
@@ -330,6 +447,98 @@ void setColorOption(int option) {
       if (V > Vmax) { Vmax = V; }
     }
     colorTable.setMinMax(Vmin, Vmax);
+    colorBar.setTitle("Vel. Mag.");
+  } break;
+
+  case COLOR_NORMAL_STIFFNESS: {
+    double normalStiffnessMin = Conf.Particles[0].normalStiffness;
+    double normalStiffnessMax = normalStiffnessMin;
+    for (size_t i = 0; i < Conf.Particles.size(); ++i) {
+      double normalStiffness = Conf.Particles[i].normalStiffness;
+      color_values[i]        = normalStiffness;
+      if (normalStiffness < normalStiffnessMin) { normalStiffnessMin = normalStiffness; }
+      if (normalStiffness > normalStiffnessMax) { normalStiffnessMax = normalStiffness; }
+    }
+    colorTable.setMinMax(normalStiffnessMin, normalStiffnessMax);
+    colorBar.setTitle("Normal stiffness");
+  } break;
+
+  case COLOR_TANGENTIAL_STIFFNESS: {
+    double tangentialStiffnessMin = Conf.Particles[0].tangentialStiffness;
+    double tangentialStiffnessMax = tangentialStiffnessMin;
+    for (size_t i = 0; i < Conf.Particles.size(); ++i) {
+      double tangentialStiffness = Conf.Particles[i].tangentialStiffness;
+      color_values[i]            = tangentialStiffness;
+      if (tangentialStiffness < tangentialStiffnessMin) { tangentialStiffnessMin = tangentialStiffness; }
+      if (tangentialStiffness > tangentialStiffnessMax) { tangentialStiffnessMax = tangentialStiffness; }
+    }
+    colorTable.setMinMax(tangentialStiffnessMin, tangentialStiffnessMax);
+    colorBar.setTitle("Tangential stiffness");
+  } break;
+
+  case COLOR_NORMAL_VISC_DAMPING_RATE: {
+    double normalViscDampingRateMin = Conf.Particles[0].normalViscDampingRate;
+    double normalViscDampingRateMax = normalViscDampingRateMin;
+    for (size_t i = 0; i < Conf.Particles.size(); ++i) {
+      double normalViscDampingRate = Conf.Particles[i].normalViscDampingRate;
+      color_values[i]              = normalViscDampingRate;
+      if (normalViscDampingRate < normalViscDampingRateMin) { normalViscDampingRateMin = normalViscDampingRate; }
+      if (normalViscDampingRate > normalViscDampingRateMax) { normalViscDampingRateMax = normalViscDampingRate; }
+    }
+    colorTable.setMinMax(normalViscDampingRateMin, normalViscDampingRateMax);
+    colorBar.setTitle("Normal viscous damping rate");
+  } break;
+
+  case COLOR_FRICTION_COEFFICIENT: {
+    double frictionMin = Conf.Particles[0].friction;
+    double frictionMax = frictionMin;
+    for (size_t i = 0; i < Conf.Particles.size(); ++i) {
+      double friction = Conf.Particles[i].friction;
+      color_values[i] = friction;
+      if (friction < frictionMin) { frictionMin = friction; }
+      if (friction > frictionMax) { frictionMax = friction; }
+    }
+    colorTable.setMinMax(frictionMin, frictionMax);
+    colorBar.setTitle("Friction");
+  } break;
+
+  case COLOR_ROLLING_FRICTION: {
+    double rollingFrictionMin = Conf.Particles[0].rollingFriction;
+    double rollingFrictionMax = rollingFrictionMin;
+    for (size_t i = 0; i < Conf.Particles.size(); ++i) {
+      double rollingFriction = Conf.Particles[i].rollingFriction;
+      color_values[i]        = rollingFriction;
+      if (rollingFriction < rollingFrictionMin) { rollingFrictionMin = rollingFriction; }
+      if (rollingFriction > rollingFrictionMax) { rollingFrictionMax = rollingFriction; }
+    }
+    colorTable.setMinMax(rollingFrictionMin, rollingFrictionMax);
+    colorBar.setTitle("Rolling friction");
+  } break;
+
+  case COLOR_ADHESION: {
+    double adhesionMin = Conf.Particles[0].adhesion;
+    double adhesionMax = adhesionMin;
+    for (size_t i = 0; i < Conf.Particles.size(); ++i) {
+      double adhesion = Conf.Particles[i].adhesion;
+      color_values[i] = adhesion;
+      if (adhesion < adhesionMin) { adhesionMin = adhesion; }
+      if (adhesion > adhesionMax) { adhesionMax = adhesion; }
+    }
+    colorTable.setMinMax(adhesionMin, adhesionMax);
+    colorBar.setTitle("Adhesion");
+  } break;
+
+  case COLOR_GC_GLUE: {
+    double GcGlueMin = Conf.Particles[0].GcGlue;
+    double GcGlueMax = GcGlueMin;
+    for (size_t i = 0; i < Conf.Particles.size(); ++i) {
+      double GcGlue   = Conf.Particles[i].GcGlue;
+      color_values[i] = GcGlue;
+      if (GcGlue < GcGlueMin) { GcGlueMin = GcGlue; }
+      if (GcGlue > GcGlueMax) { GcGlueMax = GcGlue; }
+    }
+    colorTable.setMinMax(GcGlueMin, GcGlueMax);
+    colorBar.setTitle("Gc glue");
   } break;
 
   default:
@@ -358,7 +567,7 @@ void drawPeriod() {
   glEnd();
 }
 
-void drawFarSprings() {
+void drawConnectorSprings() {
   glColor4f(0.0f, 0.0f, 0.0f, 1.0f);
   glLineWidth(1.0f);
   size_t idx;
@@ -426,6 +635,42 @@ void drawParticles() {
   }
 }
 
+void drawVelocityField() {
+  if (mouse_mode != NOTHING) { return; }
+
+  glLineWidth(1.0f);
+  glColor4f(0.0f, 0.0f, 0.0f, 1.0f);
+
+  double v2max = Conf.Particles[0].vel * Conf.Particles[0].vel;
+  for (size_t i = 1; i < Conf.Particles.size(); ++i) {
+    double v2 = Conf.Particles[i].vel * Conf.Particles[i].vel;
+    if (v2 > v2max) { v2max = v2; }
+  }
+  double vmax     = sqrt(v2max);
+  double factor   = 2.0 * Rmean / vmax;
+  double headSize = 0.5 * Rmean;
+
+  for (size_t i = 0; i < Conf.Particles.size(); ++i) {
+    vec2r pos = Conf.Particles[i].pos;
+    vec2r vel = Conf.Particles[i].vel;
+    vec2r posHead(pos.x + factor * vel.x, pos.y + factor * vel.y);
+    vec2r n = posHead - pos;
+    n.normalize();
+    vec2r t(-n.y * 0.6, n.x * 0.6);
+
+    glBegin(GL_LINES);
+    glVertex2f(pos.x, pos.y);
+    glVertex2f(posHead.x, posHead.y);
+
+    glVertex2f(posHead.x, posHead.y);
+    glVertex2f(posHead.x + headSize * (-n.x + t.x), posHead.y + headSize * (-n.y + t.y));
+
+    glVertex2f(posHead.x, posHead.y);
+    glVertex2f(posHead.x + headSize * (-n.x - t.x), posHead.y + headSize * (-n.y - t.y));
+    glEnd();
+  }
+}
+
 void drawGhosts() {
   if (mouse_mode != NOTHING) { return; }
 
@@ -485,8 +730,11 @@ void drawContacts() {
     size_t j   = Conf.Interactions[k].j;
     vec2r posi = Conf.Particles[i].pos;
     vec2r sij  = Conf.Particles[j].pos - Conf.Particles[i].pos;
-    if (sij.x >halfL) {sij.x -= L;}
-    else if (sij.x < -halfL) {sij.x += L;}
+    if (sij.x > halfL) {
+      sij.x -= L;
+    } else if (sij.x < -halfL) {
+      sij.x += L;
+    }
     vec2r posj = posi + sij;
     glVertex2f(posi.x, posi.y);
     glVertex2f(posj.x, posj.y);
@@ -498,6 +746,9 @@ void drawContacts() {
 void drawForces() {
   if (mouse_mode != NOTHING) { return; }
 
+  double L     = Conf.xmax - Conf.xmin;
+  double halfL = 0.5 * L;
+
   // grain-grain
   glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
 
@@ -506,11 +757,16 @@ void drawForces() {
     size_t j   = Conf.Interactions[k].j;
     vec2r posi = Conf.Particles[i].pos;
     vec2r sij  = Conf.Particles[j].pos - Conf.Particles[i].pos;
+    if (sij.x > halfL) {
+      sij.x -= L;
+    } else if (sij.x < -halfL) {
+      sij.x += L;
+    }
     vec2r posj = posi + sij;
 
     // Calculate the width of the rectangle
-    // GLfloat width = Conf.radiusMean * (Conf.Interactions[k].fn / Conf.fnMax);
-    GLfloat width = 0.001;
+    GLfloat width = Rmean * (Conf.Interactions[k].fn / fnMax);
+    // GLfloat width = 0.0001 * Conf.Interactions[k].fn;
 
     // Calculate the direction vector and the perpendicular vector
     vec2r dir = posj - posi;
@@ -542,6 +798,7 @@ bool try_to_readConf(int num, SPICE &CF, int &OKNum) {
     OKNum = num;
     CF.loadConf(file_name);
     CF.accelerations();
+    preComputations();
     setColorOption(particle_color_option);
     return true;
   } else {
@@ -550,49 +807,179 @@ bool try_to_readConf(int num, SPICE &CF, int &OKNum) {
   return false;
 }
 
+void preComputations() {
+  if (Conf.Particles.empty()) { return; }
+
+  Rmin  = Conf.Particles[0].radius;
+  Rmax  = Rmin;
+  Rmean = 0.0;
+  for (size_t i = 0; i < Conf.Particles.size(); ++i) {
+    double R = Conf.Particles[i].radius;
+    Rmean += R;
+    if (R < Rmin) { Rmin = R; }
+    if (R > Rmax) { Rmax = R; }
+  }
+  Rmean /= static_cast<double>(Conf.Particles.size());
+
+  fnMax = 0.0;
+  for (size_t k = 0; k < Conf.Interactions.size(); ++k) {
+    if (Conf.Interactions[k].fn > fnMax) { fnMax = Conf.Interactions[k].fn; }
+  }
+}
+
 void menu(int num) {
   switch (num) {
 
   case 0: {
     exit(0);
   } break;
+  case 1: {
+    Conf.resetCloseList(Conf.dVerlet);
+  } break;
+  case 2: {
+    std::vector<Interaction> storedInteractions(Conf.Interactions.size());
+    std::copy(Conf.Interactions.begin(), Conf.Interactions.end(), storedInteractions.begin());
+    Conf.Interactions.clear();
+    for (size_t k = 0; k < storedInteractions.size(); k++) {
+      if (fabs(storedInteractions[k].fn) < 1e-20 && storedInteractions[k].isBonded == false) { continue; }
+      Conf.Interactions.push_back(storedInteractions[k]);
+    }
+  } break;
 
-    // case xx: {} break;
-  };
+  case 10: {
+    show_particles = 1 - show_particles;
+  } break;
+  case 11: {
+    show_ghosts = 1 - show_ghosts;
+  } break;
+  case 12: {
+    show_period = 1 - show_period;
+  } break;
+  case 13: {
+    show_forces = 1 - show_forces;
+  } break;
+  case 14: {
+    show_contacts = 1 - show_contacts;
+  } break;
+  case 15: {
+    showOrientations = 1 - showOrientations;
+  } break;
+  case 16: {
+    showConnectors = 1 - showConnectors;
+  } break;
+  case 17: {
+    show_velocity_field = 1 - show_velocity_field;
+  } break;
+
+  case 40: {
+    setColorOption(COLOR_NONE);
+  } break;
+  case 41: {
+    setColorOption(COLOR_RADIUS);
+  } break;
+  case 42: {
+    setColorOption(COLOR_VELOCITY_MAGNITUDE);
+  } break;
+  case 43: {
+    setColorOption(COLOR_NORMAL_STIFFNESS);
+  } break;
+  case 44: {
+    setColorOption(COLOR_TANGENTIAL_STIFFNESS);
+  } break;
+  case 45: {
+    setColorOption(COLOR_NORMAL_VISC_DAMPING_RATE);
+  } break;
+  case 46: {
+    setColorOption(COLOR_FRICTION_COEFFICIENT);
+  } break;
+  case 47: {
+    setColorOption(COLOR_ROLLING_FRICTION);
+  } break;
+  case 48: {
+    setColorOption(COLOR_ADHESION);
+  } break;
+  case 49: {
+    setColorOption(COLOR_GC_GLUE);
+  } break;
+
+  case 70: {
+    double Z     = 0.0;
+    double Zprox = 0.0;
+    for (size_t k = 0; k < Conf.Interactions.size(); k++) {
+      if (Conf.Interactions[k].fn > 0.0) { Z += 2.0; } // FIXME: not ok for glued interactions
+      Zprox += 2.0;
+    }
+    double N = static_cast<double>(Conf.Particles.size());
+    if (N > 1.0) {
+      Z /= N;
+      Zprox /= N;
+    }
+    textZone.addLine("Z = %.4f, Zprox = %.4f", Z, Zprox);
+  } break;
+
+  case 100: {
+    show_profile = 0;
+  } break;
+  case 101: {
+    show_profile   = 1;
+    profile_option = PROFILE_RADIUS;
+    profile_title  = "Radius";
+  } break;
+  case 102: {
+    show_profile   = 1;
+    profile_option = PROFILE_VELOCITY_X;
+    profile_title  = "Velocity X";
+  } break;
+
+  }; // end switch
 
   glutPostRedisplay();
 }
 
 void buildMenu() {
-  /*
-  int submenu1 = glutCreateMenu(menu);
-  glutAddMenuEntry("None", 10);
-  glutAddMenuEntry("Pipe alone", 11);
-  glutAddMenuEntry("Show nodes", 12);
-  glutAddMenuEntry("Show loading", 13);
-  glutAddMenuEntry("Show internal stress", 14);
+  int submenu10 = glutCreateMenu(menu);
+  glutAddMenuEntry("Show particles", 10);
+  glutAddMenuEntry("Show ghost-particles", 11);
+  glutAddMenuEntry("Show period", 12);
+  glutAddMenuEntry("Show forces", 13);
+  glutAddMenuEntry("Show contacts", 14);
+  glutAddMenuEntry("Show orientations", 15);
+  glutAddMenuEntry("Show connectors", 16);
+  glutAddMenuEntry("Show velocity field", 17);
 
-  int submenu2 = glutCreateMenu(menu);
-  glutAddMenuEntry("Axial", 20);
-  glutAddMenuEntry("Bending moment", 21);
-  glutAddMenuEntry("External Hoop Stress", 22);
+  int submenu40 = glutCreateMenu(menu);
+  glutAddMenuEntry("None", 40);
+  glutAddMenuEntry("Radius", 41);
+  glutAddMenuEntry("Velocity Magnitude", 42);
+  glutAddMenuEntry("Normal stiffness", 43);
+  glutAddMenuEntry("Tangential stiffness", 44);
+  glutAddMenuEntry("Normal viscous damping rate", 45);
+  glutAddMenuEntry("Friction coefficient", 46);
+  glutAddMenuEntry("Rolling friction", 47);
+  glutAddMenuEntry("Adhesion", 48);
+  glutAddMenuEntry("Gc glue", 49);
 
-  int submenu3 = glutCreateMenu(menu);
-  glutAddMenuEntry("K", 30);
-  glutAddMenuEntry("pressure", 31);
-  */
+  int submenu70 = glutCreateMenu(menu);
+  glutAddMenuEntry("Connectivity", 70);
+
+  int submenu100 = glutCreateMenu(menu);
+  glutAddMenuEntry("None", 100);
+  glutAddMenuEntry("Radius", 101);
+  glutAddMenuEntry("Velocity X", 102);
 
   glutCreateMenu(menu); // Main menu
-  // glutAddSubMenu("Pipe Display Options", submenu1);
-  // glutAddSubMenu("Polar Plot Options", submenu2);
-  // glutAddSubMenu("Spider Map Options", submenu3);
+  glutAddSubMenu("Display options", submenu10);
+  glutAddSubMenu("Color particles", submenu40);
+  glutAddSubMenu("Extract data", submenu70);
+  glutAddSubMenu("Profiles", submenu100);
   glutAddMenuEntry("Quit", 0);
+  glutAddMenuEntry("Update the list of neighbors", 1);
+  glutAddMenuEntry("Clean the list of neighbors", 2);
 }
 
 // =====================================================================
 // Main function
 // =====================================================================
-
 int main(int argc, char *argv[]) {
 
   if (argc == 1) {

@@ -11,6 +11,10 @@
 #include "pacOptionsManager.hpp"
 #include "packingManager.hpp"
 #include "propertiesManager.hpp"
+#include "propertyProfile.hpp"
+
+// toofus headers
+#include "toofus/fileTool.hpp"
 
 void readJsonFile(const char *filename, pacOptionsManager &, packingManager &, farConnectionManager &,
                   propertiesManager &);

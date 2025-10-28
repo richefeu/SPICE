@@ -3,34 +3,34 @@
     "option": "grid",
     "nx": 20,
     "ny": 40,
-    "radius": [[0.3,0.001],[0.31, 0.0005]],
-    "radius-variation": 0.0001,
-    "include-far-connection": true,
-    "add-bottom-chain": 10,
-    "add-top-chain": 10,
+    "radius": 0.0005,
+    "radius-variation": 0.0002,
+    "include-connections": true,
+    "add-bottom-chain": 20,
     "density": 2700.0
   },
   "far-connection-manager": {
-    "stiffness": 1e6
+    "stiffness": 1e7
   },
   "properties-manager": {
     "density": 2700.0,
-    "normalStiffness": 1e6,
-    "tangentialStiffness": 1e6,
-    "normalViscDampingRate":0.98,
-    "friction": [[0.5, 0.9],[0.501, 0.0]]
+    "normalStiffness": 1e7,
+    "tangentialStiffness": 1e7,
+    "normalViscDampingRate": 0.98,
+    "friction": [[0.49, 0.8], [0.51, 0.1]]
   },
   "pac-options": {
     "generated-file-name": "input.txt",
     "loading": "ShearVV 0 0",
     "verbose": true,
     "gravity": [0.0, -9.81],
+    "inclination-degree": 20.0,
     "time": 0.0,
     "end-time": 1.0,
     "time-step": 1e-6,
     "time-between-update-neighbors": 10e-6,
     "time-between-outputs": 0.01,
-    "time-between-conf-files": 0.05,
-    "distance-alert": 0.001
+    "time-between-conf-files": 0.01,
+    "distance-alert": 0.0005
   }
 }

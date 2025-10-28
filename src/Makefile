@@ -10,27 +10,24 @@ CRAZY_FLAGS = -Wcast-align -Wcast-qual \
 UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Darwin)
   CXX = g++-15
-  CXXFLAGS = -O3 -Wall -Wextra -pedantic -std=c++17 -I ./toofus
+  CXXFLAGS = -O3 -Wall -Wextra -pedantic -std=c++17
   GLLINK = `pkg-config --libs gl glu glut`
-	GLFLAGS = `pkg-config --cflags gl glu glut`	
+	GLFLAGS = `pkg-config --cflags gl glu glut`
 	# on apple, use brew to install freeglut and mesa-glu
-	
+
 	# Actually, it does not compile (yet) on mac
   VTK_CFLAGS  = -I /opt/homebrew/Cellar/vtk/9.5.2/include/vtk-9.5
   VTK_LDFLAGS = -L /opt/homebrew/Cellar/vtk/9.5.2/lib -lvtkCommonCore-9.5 -lvtkCommonDataModel-9.5 \
 	 -lvtkIOXML-9.5 -lvtkIOCore-9.5
-	
-	
 else
   CXX = g++
-  CXXFLAGS = -O3 -Wall -std=c++17 -I ./toofus
+  CXXFLAGS = -O3 -Wall -std=c++17
   GLLINK = -lGLU -lGL -L/usr/X11R6/lib -lglut -lXext -lX11
-	
-  # --- VTK setup --- 
-  VTK_CFLAGS = -I/usr/include/vtk-9.1
-  VTK_LDFLAGS = -lvtkCommonCore-9.1 -lvtkCommonDataModel-9.1 -lvtkIOXML-9.1 -lvtkIOCore-9.1	
-endif
 
+  # --- VTK setup ---
+  VTK_CFLAGS = -I/usr/include/vtk-9.1
+  VTK_LDFLAGS = -lvtkCommonCore-9.1 -lvtkCommonDataModel-9.1 -lvtkIOXML-9.1 -lvtkIOCore-9.1
+endif
 
 # Ensure the toofus directory exists
 ifeq ($(wildcard ./toofus),)
@@ -60,31 +57,31 @@ clean:
 clean+: clean
 	@echo "\033[0;32m-> Remove local folder toofus\033[0m"
 	rm -rf ./toofus
-	
+
 clone_toofus:
 	@if [ ! -d "./toofus" ]; then \
 		@echo "\033[0;32m-> CLONING ToOfUs (Tools often used)\033[0m"; \
 		git clone https://github.com/richefeu/toofus.git; \
 	fi
 
-%.o: %.cpp 
+%.o: %.cpp
 	@echo "\033[0;32m-> COMPILING OBJECT" $@ "\033[0m"
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 libSPICE.a: $(OBJECTS)
 	@echo "\033[0;32m-> BUILDING LIBRARY" $@ "\033[0m"
 	ar rcs $@ $^
-	
+
 pac: pac.cpp libSPICE.a
 	@echo "\033[0;32m-> BUILDING PAC APPLICATION" $@ "\033[0m"
 	$(CXX) $(CXXFLAGS) -c $< -o pac.o
 	$(CXX) -o $@ pac.o libSPICE.a
-	
+
 run: run.cpp libSPICE.a
 	@echo "\033[0;32m-> BUILDING RUN APPLICATION" $@ "\033[0m"
 	$(CXX) $(CXXFLAGS) -c $< -o run.o
 	$(CXX) -o $@ run.o libSPICE.a
-	
+
 see: see.cpp libSPICE.a
 	@echo "\033[0;32m-> BUILDING SEE APPLICATION" $@ "\033[0m"
 	$(CXX) $(CXXFLAGS) -c $< -o see.o $(GLFLAGS)
@@ -94,4 +91,3 @@ vtk: vtk.cpp libSPICE.a
 	@echo "\033[0;32m-> BUILDING VTK APPLICATION" $@ "\033[0m"
 	$(CXX) $(CXXFLAGS) $(VTK_CFLAGS) -c $< -o vtk.o $(GLFLAGS)
 	$(CXX) -o $@ vtk.o libSPICE.a $(VTK_LDFLAGS) -lstdc++fs
-	

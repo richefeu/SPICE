@@ -2,15 +2,34 @@
 
 #include "SPICE.hpp"
 
+SPICE::SPICE() {
+  // registration of parameters embedded in particles that can be defined with a profile
+  MemberAccessor<Particle>::registerMember("normalStiffness", &Particle::normalStiffness);
+  MemberAccessor<Particle>::registerMember("tangentialStiffness", &Particle::tangentialStiffness);
+  MemberAccessor<Particle>::registerMember("normalViscDampingRate", &Particle::normalViscDampingRate);
+  MemberAccessor<Particle>::registerMember("friction", &Particle::friction);
+  MemberAccessor<Particle>::registerMember("rollingFriction", &Particle::rollingFriction);
+  MemberAccessor<Particle>::registerMember("adhesion", &Particle::adhesion);
+  MemberAccessor<Particle>::registerMember("GcGlue", &Particle::GcGlue);
+}
+
 // ---------------------------------------------------------
 // ---------------------------------------------------------
 void SPICE::head() {
   std::cout << '\n';
-  std::cout << "      SPICE - " << SPICE_VERSION << '\n';
-  std::cout << "      Laboratoire 3SR" << '\n';
-  std::cout << "      Université Grenoble Alpes, France" << '\n';
-  std::cout << "         <vincent.richefeu@univ-grenoble-alpes.fr>" << '\n';
-  std::cout << "         <cyrille.couture@univ-grenoble-alpes.fr>" << '\n';
+  std::cout << "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣴⡾⠃ " << '\n';
+  std::cout << "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⣀⣀⣾⠋⠀⠀ " << '\n';
+  std::cout << "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠘⠛⠻⢿⣷⣄⠀⠀ " << '\n';
+  std::cout << "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⡾⢛⣿⣿⣶⣄⠙⠿⠀⠀      SPICE - " << SPICE_VERSION << '\n';
+  std::cout << "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⡟⢀⣾⣿⣿⣿⣿⣷⡀⠀⠀      Laboratoire 3SR" << '\n';
+  std::cout << "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⡿⢀⣾⣿⣿⣿⣿⣿⣿⠀⠀⠀      Université Grenoble Alpes, France" << '\n';
+  std::cout << "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣸⡇⣼⣿⣿⣿⣿⣿⣿⠃⠀⠀⠀          vincent.richefeu@univ-grenoble-alpes.fr" << '\n';
+  std::cout << "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣿⣷⣿⣿⣿⣿⣿⡿⠁⠀⠀⠀⠀          cyrille.couture@univ-grenoble-alpes.fr" << '\n';
+  std::cout << "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣼⣿⣿⣿⣿⣿⣿⠏⠀⠀⠀⠀⠀⠀ " << '\n';
+  std::cout << "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⣾⣿⣿⣿⣿⡿⠟⠁⠀⠀⠀⠀⠀⠀⠀ " << '\n';
+  std::cout << "⠀⠀⠀⠀⠀⠀⠀⠀⠀⣠⣶⣿⣿⣿⣿⠿⠋⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀ " << '\n';
+  std::cout << "⠀⠀⠀⠀⠀⠀⢀⣤⣾⣿⣿⣿⠿⠋⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀ " << '\n';
+  std::cout << "⠀⠀⠀⠀⣠⣶⡿⠿⠛⠋⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀ " << '\n';  
   std::cout << std::endl;
 }
 
@@ -28,6 +47,7 @@ void SPICE::saveConf(const char *name) {
   std::ofstream conf(name);
 
   conf << "SPICE " << SPICE_VERSION << std::endl; // format: progName version-date
+
   conf << std::setprecision(6);
   conf << "t " << t << std::endl;
   conf << "tmax " << tmax << std::endl;
@@ -38,14 +58,17 @@ void SPICE::saveConf(const char *name) {
   conf << "dVerlet " << dVerlet << std::endl;
   conf << "gravity " << gravity << std::endl;
   conf << "iconf " << iconf << std::endl;
-  conf << "Xperiod " << xmin << " " << xmax << std::endl;
-  conf << "bottom " << bottom.Idx.size() << " " << bottom.K << std::endl;
+  conf << "Xperiod " << xmin << ' ' << xmax << std::endl;
+
+  conf << "bottom " << bottom.Idx.size() << ' ' << bottom.K << std::endl;
   conf << std::setprecision(15);
-  for (size_t i = 0; i < bottom.Idx.size(); i++) { conf << bottom.Idx[i] << " " << bottom.pos[i] << std::endl; }
+  for (size_t i = 0; i < bottom.Idx.size(); i++) { conf << bottom.Idx[i] << ' ' << bottom.pos[i] << std::endl; }
+
   conf << std::setprecision(6);
-  conf << "top " << top.Idx.size() << " " << top.K << std::endl;
+  conf << "top " << top.Idx.size() << ' ' << top.K << std::endl;
   conf << std::setprecision(15);
-  for (size_t i = 0; i < top.Idx.size(); i++) { conf << top.Idx[i] << " " << top.pos[i] << std::endl; }
+  for (size_t i = 0; i < top.Idx.size(); i++) { conf << top.Idx[i] << ' ' << top.pos[i] << std::endl; }
+
   conf << "Loading ";
   if (Load != nullptr) {
     Load->write(conf);
@@ -57,21 +80,27 @@ void SPICE::saveConf(const char *name) {
   conf << "Particles " << Particles.size() << std::endl;
   conf << std::setprecision(15);
   for (size_t i = 0; i < Particles.size(); i++) {
-    conf << Particles[i].pos << " " << Particles[i].vel << " " << Particles[i].acc << " " << Particles[i].rot << " "
-         << Particles[i].vrot << " " << Particles[i].arot << " " << Particles[i].radius << " " << Particles[i].inertia
-         << " " << Particles[i].mass << " ";
-    conf << Particles[i].normalStiffness << " " << Particles[i].tangentialStiffness << " "
-         << Particles[i].normalViscDampingRate << " " << Particles[i].friction << " " << Particles[i].rollingFriction
-         << " " << Particles[i].adhesion << " " << Particles[i].GcGlue << std::endl;
+    conf << Particles[i].pos << ' ' << Particles[i].vel << ' ' << Particles[i].acc << ' ' << Particles[i].rot << ' '
+         << Particles[i].vrot << ' ' << Particles[i].arot << ' ' << Particles[i].radius << ' ' << Particles[i].inertia
+         << ' ' << Particles[i].mass << ' ';
+    conf << Particles[i].normalStiffness << ' ' << Particles[i].tangentialStiffness << ' '
+         << Particles[i].normalViscDampingRate << ' ' << Particles[i].friction << ' ' << Particles[i].rollingFriction
+         << ' ' << Particles[i].adhesion << ' ' << Particles[i].GcGlue << std::endl;
   }
-  conf << "Interactions " << Interactions.size() << std::endl;
+
+  size_t nbInteractions = 0;
+  for (size_t i = 0; i < Interactions.size(); i++) {
+    if (fabs(Interactions[i].fn) < 1e-20 && Interactions[i].isBonded == false) { continue; }
+    ++nbInteractions;
+  }
+  conf << "Interactions " << nbInteractions << std::endl;
   conf << std::setprecision(15);
   for (size_t i = 0; i < Interactions.size(); i++) {
-    //if (fabs(Interactions[i].fn) < 1.0e-20 && Interactions[i].bond ==0) { continue; }
-    conf << Interactions[i].i << " " << Interactions[i].j << " " << Interactions[i].bond << " " << Interactions[i].solidbond
-         << " " << Interactions[i].fn << " " << Interactions[i].fnb
-         << " " << Interactions[i].ft << " " << Interactions[i].ftb
-         << " " << Interactions[i].damp << " " << Interactions[i].Gs << " " << Interactions[i].dn0 << std::endl;
+    if (fabs(Interactions[i].fn) < 1e-20 && Interactions[i].isBonded == false) { continue; }
+    conf << Interactions[i].i << ' ' << Interactions[i].j << ' ' << Interactions[i].isBonded << ' '
+         << Interactions[i].isSameMaterialBond << ' ' << Interactions[i].fn << ' ' << Interactions[i].fnb << ' '
+         << Interactions[i].ft << ' ' << Interactions[i].ftb << ' ' << Interactions[i].damp << ' ' << Interactions[i].Gs
+         << ' ' << Interactions[i].dn0 << std::endl;
   }
 }
 
@@ -90,6 +119,14 @@ void SPICE::loadConf(int i) {
 void SPICE::loadConf(const char *name) {
   std::ifstream conf(name);
   if (!conf.is_open()) { std::cout << SPICE_WARN << "Cannot read " << name << std::endl; }
+
+  // A warning for the placement of procesing commands
+  auto warn_if_wrong_place = [&](const std::string &token) {
+    if (Particles.empty()) {
+      std::cout << SPICE_WARN << "the command " << token << " should be placed after the definition of particles"
+                << std::endl;
+    }
+  };
 
   // Check header
   std::string prog;
@@ -122,47 +159,7 @@ void SPICE::loadConf(const char *name) {
       conf >> dVerlet;
     } else if (token == "gravity") {
       conf >> gravity;
-    }
-
-    // profile kn 1  0 10000
-    // profile mu 2  0.0 0.0   1.0 0.8
-
-    /*
-    // std::map<std::string,propertyProfile<double>> profile;
-    // e.g. profile["kn"] ...
-if (token == "profile") {
-    std::string param;
-    if (!(conf >> param)) {
-        std::cout << SPICE_WARN << "profile name number {[ y value ] x number}" << std::endl;
-        std::cout << SPICE_WARN << "e.g. profile mu 2  0.0 0.0  1.0 0.8" << std::endl;
-        return;
-    }
-    auto it = profile.find(param);
-    if (it == profile.end()) {
-        // Insert new entry
-        auto result = profile.emplace(param, propertyProfile<double>());
-        if (!result.second) {
-            // Handle insertion failure
-
-            return;
-        }
-        it = result.first;
-    }
-    try {
-        it->second.readStream(conf);
-    } catch (...) {
-        // Handle error
-        std::cout << SPICE_WARN << "profile name number {[ y value ] x number}" << std::endl;
-        std::cout << SPICE_WARN << "e.g. profile mu 2  0.0 0.0  1.0 0.8" << std::endl;
-        throw;
-    }
-}
-
-
-
-
-    */
-    else if (token == "iconf") {
+    } else if (token == "iconf") {
       conf >> iconf;
     } else if (token == "Xperiod") {
       conf >> xmin >> xmax;
@@ -229,11 +226,6 @@ if (token == "profile") {
         Load->box = this;
         Load->read(conf);
       }
-    
-    } else if (token == "activateBonds") {
-  
-      conf >> solidbond >> dmax;
-      activateBonds(solidbond, dmax);
 
     } else if (token == "Particles") {
       size_t nb;
@@ -252,12 +244,55 @@ if (token == "profile") {
       conf >> nb;
       Interactions.clear();
       Interaction I;
-      for (size_t i = 0; i < nb; i++) {
-        conf >> I.i >> I.j >> I.bond >> I.solidbond >> I.fn >> I.fnb >> I.ft >> I.ftb >> I.damp >> I.Gs >> I.dn0;
+      for (size_t k = 0; k < nb; k++) {
+        conf >> I.i >> I.j >> I.isBonded >> I.isSameMaterialBond >> I.fn >> I.fnb >> I.ft >> I.ftb >> I.damp >> I.Gs >>
+            I.dn0;
         Interactions.push_back(I);
-        // std::cout << i << ": " << I.i << " " << I.j << " " << I.bond << " " << I.solidbond << std::endl;
       }
-    } else {
+    }
+
+    // Processing commands that should be placed after
+    // the definition of particles (at the very end of the conf-file preferably).
+    // This commands generally added in input-files but not saved in the conf-files
+    else if (token == "activateBonds") {
+      warn_if_wrong_place(token);
+      bool isSameMaterial;
+      double distanceMaxForGluing;
+      conf >> isSameMaterial >> distanceMaxForGluing;
+      activateBonds(isSameMaterial, distanceMaxForGluing);
+    }
+
+    // EmbeddedDataProfile kn 1  0 10000
+    // EmbeddedDataProfile mu 2  0.0 0.0   1.0 0.8
+
+    // std::map<std::string, propertyProfile<double>> profile;
+    // e.g. profile["kn"] ...
+
+    else if (token == "EmbeddedDataProfile") {
+      std::string param;
+      conf >> param;
+
+      if (!MemberAccessor<Particle>::hasRegistered(param)) {
+        std::cout << SPICE_WARN << "parameters '" << param << "' cannot define a profile" << std::endl;
+        getline(conf, token); // ignore the rest of the current line
+        conf >> token;        // next token
+        continue;
+      }
+
+      auto it = EmbeddedDataProfileMap.find(param);
+      if (it != EmbeddedDataProfileMap.end()) {
+        EmbeddedDataProfileMap.erase(it);
+        std::cout << SPICE_WARN << "profile " << param << " was already defined. It will be redefined" << std::endl;
+      }
+
+      propertyProfile<double> P;
+      P.readStream(conf);
+      EmbeddedDataProfileMap[param] = P;
+      std::cout << SPICE_INFO << "profile for '" << param << "' -> " << P << std::endl;
+    }
+
+    // Unknown token
+    else {
       std::cout << SPICE_WARN << "Unknown token: " << token << std::endl;
     }
 
@@ -266,13 +301,31 @@ if (token == "profile") {
 
   // precompute things ========================================
   updateYrange();
-  // TODO set the property profiles that have been eventually (re-)set
+  applyEmbeddedDataProfiles(); // set the property profiles that have been eventually (re-)set
   combineParameters();
 
   // some checks
   if (Particles.empty()) { std::cout << SPICE_WARN << "No Particles" << std::endl; }
 
   if (Load == nullptr) { std::cout << SPICE_WARN << "No Loading defined!" << std::endl; }
+}
+
+// ---------------------------------------------------------
+//
+// ---------------------------------------------------------
+void SPICE::applyEmbeddedDataProfiles() {
+  for (const auto &entry : EmbeddedDataProfileMap) {
+    std::string param               = entry.first;
+    propertyProfile<double> profile = entry.second;
+
+    size_t offset = MemberAccessor<Particle>::getOffset(param);
+    double invH = 1.0 / (ymax - ymin);
+    for (size_t i = 0; i < Particles.size(); ++i) {
+      double normalizedHeight = invH * (Particles[i].pos.y - ymin);
+      double value            = profile.getValueAt(normalizedHeight);
+      MemberAccessor<Particle>::setAtOffset<double>(offset, Particles[i], value);
+    }
+  }
 }
 
 // ---------------------------------------------------------
@@ -292,9 +345,11 @@ void SPICE::updateYrange() {
 // ---------------------------------------------------------
 //
 // ---------------------------------------------------------
-void SPICE::activateBonds(bool solidbond, double dmax) {
+void SPICE::activateBonds(bool sameMaterial, double dmax) {
   // In case the conf-file has no interactions, the neighbor list is updated
-  resetCloseList(dVerlet);
+  resetCloseList(dmax);
+
+  double Lperiod = xmax - xmin;
 
   std::cout << " routine to activate bonds" << std::endl;
 
@@ -302,28 +357,27 @@ void SPICE::activateBonds(bool solidbond, double dmax) {
     size_t i = Interactions[k].i;
     size_t j = Interactions[k].j;
 
-    double Lperiod = xmax - xmin;
     vec2r branch = Particles[j].pos - Particles[i].pos;
     branch.x += getBranchShift(branch.x, Lperiod);
 
     double branchLen2 = norm2(branch);
-    double sum = dmax + Particles[i].radius + Particles[j].radius;
+    double sum        = dmax + Particles[i].radius + Particles[j].radius;
     if (branchLen2 <= sum * sum) {
 
       // switch to a cemented/bonded link
-      Interactions[k].bond = true;
-      Interactions[k].solidbond = solidbond;
+      Interactions[k].isBonded           = true;
+      Interactions[k].isSameMaterialBond = sameMaterial;
+      // TODO Use Gc and min diameter to define a threshold Wmax
+
       std::cout << " activate bond = " << k << std::endl;
 
+      // double dn = sqrt(branchLen2) - (Particles[i].radius + Particles[j].radius);
+      // if (dn >= 0.0) Interactions[k].dn0 = dn;
+      // else Interactions[k].dn0 = 0.0;
+      Interactions[k].dn0 = sqrt(branchLen2) - (Particles[i].radius + Particles[j].radius);
 
-      double dn = sqrt(branchLen2) - (Particles[i].radius + Particles[j].radius);
-      if (dn >= 0.0)
-        Interactions[k].dn0 = dn;
-      else
-        Interactions[k].dn0 = 0.0;
-
-    }  // endif
-  }    // end loop over interactions
+    } // endif
+  } // end loop over interactions
 }
 
 // ---------------------------------------------------------
@@ -356,13 +410,16 @@ void SPICE::capture(FarConnection &field, double hmin, double hmax) {
 // ---------------------------------------------------------
 void SPICE::screenLog() {
   std::cout << std::endl;
-  std::cout << "-------------------------------------------------------------------------" << std::endl;
-  std::cout << " iconf = " << iconf << ", time = " << t << std::endl;
-  std::cout << " Stress-particles:  " << Sig << std::endl;
-  std::cout << " Stress-connection: " << SigConnect << std::endl;
-  std::cout << " Stress-total:      " << Sig + SigConnect << std::endl;
+  std::cout << "————————————————————————————————————————————————————————————————" << std::endl;
+  std::cout << " iconf = " << iconf << "/" << iconfMaxEstimated << ", time = " << t << std::endl;
+  std::cout << " Stress-particles:  " << std::endl;
+  Sig.fancyPrint(mat4r::ColoredBrackets | mat4r::Scientific, 12);
+  std::cout << " Stress-connection: " << std::endl;
+  SigConnect.fancyPrint(mat4r::ColoredBrackets | mat4r::Scientific, 12);
+  // std::cout << " Stress-total:      " << Sig + SigConnect << std::endl;
+
   // ...
-  std::cout << "-------------------------------------------------------------------------" << std::endl;
+  std::cout << "————————————————————————————————————————————————————————————————" << std::endl;
 }
 
 // ---------------------------------------------------------
@@ -382,38 +439,47 @@ double SPICE::harmonicMean(double x, double y) {
 }
 
 // ---------------------------------------------------------
-// Combine the parameters that are stored within particles
+// Combines the parameters that are stored within particles
+// of the interaction k
+// ---------------------------------------------------------
+void SPICE::combineParameters(size_t k) {
+
+  size_t i = Interactions[k].i;
+  size_t j = Interactions[k].j;
+
+  // TODO with functionDispatcher in toofus
+  // Interactions[k].kn = combineDispatcher.call(kn_dispatcher, Particles[i].kn, Particles[j].kn);
+
+  Interactions[k].meff = harmonicMean(Particles[i].mass, Particles[j].mass);
+  Interactions[k].kn   = harmonicMean(Particles[i].normalStiffness, Particles[j].normalStiffness);
+  Interactions[k].kt   = harmonicMean(Particles[i].tangentialStiffness, Particles[j].tangentialStiffness);
+  double dampingRate   = harmonicMean(Particles[i].normalViscDampingRate, Particles[j].normalViscDampingRate);
+  Interactions[k].damp = 2.0 * dampingRate * sqrt(Interactions[k].kn * Interactions[k].meff);
+  Interactions[k].mu   = std::min(Particles[i].friction, Particles[j].friction);
+  Interactions[k].muR  = harmonicMean(Particles[i].rollingFriction, Particles[j].rollingFriction);
+  Interactions[k].fadh = std::min(Particles[i].adhesion, Particles[j].adhesion);
+  // ...
+}
+
+// ---------------------------------------------------------
+// Combines the parameters that are stored within particles
+// for all Interactions
 // ---------------------------------------------------------
 void SPICE::combineParameters() {
-  for (size_t k = 0; k < Interactions.size(); ++k) {
-    size_t i = Interactions[k].i;
-    size_t j = Interactions[k].j;
-
-    // TODO with functionDispatcher in toofus
-    // Interactions[k].kn = combineDispatcher.call(kn_dispatcher, Particles[i].kn, Particles[j].kn);
-
-    Interactions[k].meff = harmonicMean(Particles[i].mass, Particles[j].mass);
-    Interactions[k].kn   = harmonicMean(Particles[i].normalStiffness, Particles[j].normalStiffness);
-    Interactions[k].kt   = harmonicMean(Particles[i].tangentialStiffness, Particles[j].tangentialStiffness);
-    double dampingRate   = harmonicMean(Particles[i].normalViscDampingRate, Particles[j].normalViscDampingRate);
-    Interactions[k].damp = 2.0 * dampingRate * sqrt(Interactions[k].kn * Interactions[k].meff);
-    Interactions[k].mu   = std::min(Particles[i].friction, Particles[j].friction);
-    Interactions[k].muR  = harmonicMean(Particles[i].rollingFriction, Particles[j].rollingFriction);
-    Interactions[k].fadh = std::min(Particles[i].adhesion, Particles[j].adhesion);
-    // ---
-  }
+  for (size_t k = 0; k < Interactions.size(); ++k) { combineParameters(k); }
 }
 
 // ---------------------------------------------------------
 // O(N^2) algorithm for updating the list of neighbors
 // of each particle
 // ---------------------------------------------------------
-void SPICE::resetCloseList(double dmax) {
-  // store ft because the list will be erased before being rebuilt
-  std::vector<Interaction> storedInteractions;
-  for (size_t k = 0; k < Interactions.size(); ++k) { storedInteractions.push_back(Interactions[k]); }
+void SPICE::resetCloseList(double dmax) { // TODO: rename updateNeighborList()
 
-  // now rebuild the list
+  // store ft because the list will be erased before being rebuilt
+  std::vector<Interaction> storedInteractions(Interactions.size());
+  std::copy(Interactions.begin(), Interactions.end(), storedInteractions.begin());
+
+  // now clear the list and rebuild it
   Interactions.clear();
   double Lperiod = xmax - xmin;
   for (size_t i = 0; i < Particles.size(); ++i) {
@@ -427,11 +493,9 @@ void SPICE::resetCloseList(double dmax) {
     }
   }
 
-  combineParameters();
-
-  // retrieve ft values
-  size_t k, kold = 0;
-  for (k = 0; k < Interactions.size(); ++k) {
+  // retrieve the embbeded values from Interactions that were present
+  size_t k{0}, kold{0};
+  for (; k < Interactions.size(); ++k) {
     while (kold < storedInteractions.size() && storedInteractions[kold].i < Interactions[k].i) { ++kold; }
     if (kold == storedInteractions.size()) { break; }
 
@@ -442,9 +506,17 @@ void SPICE::resetCloseList(double dmax) {
     if (kold == storedInteractions.size()) { break; }
 
     if (storedInteractions[kold].i == Interactions[k].i && storedInteractions[kold].j == Interactions[k].j) {
-      Interactions[k] = storedInteractions[kold];
+      Interactions[k].copy(storedInteractions[kold]);
       ++kold;
+    } else {
+      combineParameters(k);
     }
+  }
+
+  // finish parameter-combinations in case of loop-break
+  if (k < Interactions.size()) {
+    if (k > 0) { --k; }
+    for (; k < Interactions.size(); ++k) { combineParameters(k); }
   }
 }
 
@@ -455,10 +527,19 @@ void SPICE::integrate() {
   double dt_2  = 0.5 * dt;
   double dt2_2 = 0.5 * dt * dt;
 
+  iconfMaxEstimated = iconf + floor((tmax - t) / interHist);
+
   std::ofstream stressOut("stress.out.txt");
+  // std::ofstream debug("debug.txt");
+
   double Lperiod = xmax - xmin;
 
   Load->init();
+
+  saveConf(iconf); // save before any computation
+  screenLog();
+  ++iconf;
+  interHistC = 0.0;
 
   std::cout << SPICE_INFO << "Beginning iterations." << std::endl;
   while (t < tmax) {
@@ -488,27 +569,32 @@ void SPICE::integrate() {
       Particles[i].vrot += dt_2 * Particles[i].arot;
     }
 
-    if (interCloseC >= interClose) {
+    t += dt;
+
+    interCloseC += dt;
+    if (interCloseC > interClose - dt_2) {
       resetCloseList(dVerlet);
       interCloseC = 0.0;
     }
 
-    if (interOutC >= interOut) {
+    interOutC += dt;
+    if (interOutC > interOut - dt_2) {
       stressOut << t << " " << Sig << " " << SigConnect << std::endl;
       interOutC = 0.0;
+      /*
+      if (!Interactions.empty())
+        debug << t << ' ' <<  Interactions[0].i << ' ' << Interactions[0].j << ' ' << Interactions[0].ft << ' '
+              << Interactions[0].fn << std::endl;
+      */
     }
 
-    if (interHistC >= interHist) {
+    interHistC += dt;
+    if (interHistC > interHist - dt_2) {
       saveConf(iconf);
       screenLog();
       ++iconf;
       interHistC = 0.0;
     }
-
-    interHistC += dt;
-    interOutC += dt;
-    interCloseC += dt;
-    t += dt;
   }
 
   return;
@@ -557,6 +643,7 @@ void SPICE::computeFarConnectionForces() {
     branch.x += getBranchShift(branch.x, Lperiod);
     vec2r f = bottom.K * branch;
     Particles[idx].force -= f;
+    // Particles[idx].moment -= bottom.Kr * Particles[idx].rot;
     SigConnect.xx += f.x * branch.x;
     SigConnect.xy += f.x * branch.y;
     SigConnect.yx += f.y * branch.x;
@@ -584,90 +671,89 @@ void SPICE::computeForcesAndMoments() {
   double Lperiod = xmax - xmin;
   for (size_t k = 0; k < Interactions.size(); ++k) {
 
-    // all this will be in the particle params -->
-    //bool bond = false;
-    //bool solidbond = false;
-    //double fnb = 0.0;
-    //double ftb = 0.0;
-    // <--
-
     size_t i = Interactions[k].i;
     size_t j = Interactions[k].j;
 
     vec2r branch = Particles[j].pos - Particles[i].pos;
     branch.x += getBranchShift(branch.x, Lperiod);
-    
-    vec2r n = branch;
-    vec2r realVel = Particles[j].vel - Particles[i].vel; // Does not account for rotation yet
-    vec2r T(-n.y, n.x);
 
-    double len = n.normalize();
-    double dn  = len - Particles[i].radius - Particles[j].radius;
-    double vn  = realVel * n;
+    vec2r unit_n = branch;
+    double len   = unit_n.normalize();
+    vec2r relVel = Particles[j].vel - Particles[i].vel; // Does not account for rotation yet
 
-    double Ri    = Particles[i].radius + 0.5 * dn;
-    double Rj    = Particles[j].radius + 0.5 * dn;
+    vec2r unit_t(-unit_n.y, unit_n.x);
+    double dn = len - Particles[i].radius - Particles[j].radius;
+    double vn = relVel * unit_n;
 
-    if (Interactions[k].bond) { // i and j are bonded
+    double Li   = Particles[i].radius + 0.5 * dn;
+    double Lj   = Particles[j].radius + 0.5 * dn;
+    double vijt = relVel * unit_t - Particles[i].vrot * Li - Particles[j].vrot * Lj;
+
+    // ===================================
+    // BOND
+    // ===================================
+    if (Interactions[k].isBonded == true) { // i and j are bonded
+
+      // FIXME: il faut ajouter les variables dnb et dtb
 
       // calculate the bonded forces
+      Interactions[k].fnb = -Interactions[k].kn * (dn - Interactions[k].dn0);
+      // Interactions[k].ftb = Interactions[k].ft - Interactions[k].kt * dt * vijt;
 
-      double fnb = -Interactions[k].kn * (dn -Interactions[k].dn0) ;
+    } else { // i and j not bonded
 
-      //double vijt  = realVel * T - Particles[i].vrot * Ri - Particles[j].vrot * Rj;
-      //ftb    = Interactions[k].ft - Interactions[k].kt * dt * vijt;
-
-      // test if the bond breaks
-
-      Interactions[k].fnb = fnb;
-    }
-    else { // i and j not bonded
       Interactions[k].fnb = 0;
       Interactions[k].ftb = 0;
     }
 
-    if (Interactions[k].bond && Interactions[k].solidbond) { // no friction contact when bonded
+    // ===================================
+    // CONTACT
+    // ===================================
+    if (Interactions[k].isBonded == true && Interactions[k].isSameMaterialBond == true) {
+
+      // no frictional contact when the bonded particles are linked with the same material
       Interactions[k].fn = 0.0;
       Interactions[k].ft = 0.0;
-    }
-    else { // friction
 
-      double sum = Particles[i].radius + Particles[j].radius;
-      if (norm2(branch) <= sum * sum) { // it means that i and j are in contact
-        
+    } else { // frictional contact (possibly in addition to bond)
 
-        // Normal force (elastic + viscous)
-        double fne = -Interactions[k].kn * dn;
-        double fnv = -Interactions[k].damp * vn;
-        //
+      if (dn < 0.0) { // it means that i and j are in contact
+
+        double fne = -Interactions[k].kn * dn;   // elastic normal force
+        double fnv = -Interactions[k].damp * vn; // viscous normal force
+
         Interactions[k].fn = fne + fnv;
         if (Interactions[k].fn < 0.0) { Interactions[k].fn = 0.0; }
 
         // Tangential force (friction)
-        double vijt  = realVel * T - Particles[i].vrot * Ri - Particles[j].vrot * Rj;
-        double ft    = Interactions[k].ft - Interactions[k].kt * dt * vijt;
-        double ftest = Interactions[k].mu * Interactions[k].fn;
+        double ft    = Interactions[k].ft - Interactions[k].kt * (dt * vijt);
+        double ftest = Interactions[k].mu * Interactions[k].fn; // remember that fn >= 0
         if (fabs(ft) > ftest) { ft = (ft > 0.0) ? ftest : -ftest; }
         Interactions[k].ft = ft;
+
+        // Adhesion
+        // TODO:
+        // Interactions[k].fn -= fadh;
       }
+    }
 
-
-    } // if
-
-    // .... other force laws
+    // ===================================
+    // BREAKAGE OF BONDS
+    // ===================================
+    // TODO if (isBonded) ...
 
     // Resultant force and moment
-    vec2r f = (Interactions[k].fn + Interactions[k].fnb) * n + (Interactions[k].ft +Interactions[k].ftb) * T;
+    vec2r f = (Interactions[k].fn + Interactions[k].fnb) * unit_n + (Interactions[k].ft + Interactions[k].ftb) * unit_t;
     Particles[i].force -= f;
     Particles[j].force += f;
-    Particles[i].moment -= (Interactions[k].ft +Interactions[k].ftb) * Ri;
-    Particles[j].moment -= (Interactions[k].ft +Interactions[k].ftb) * Rj;
+    Particles[i].moment -= (Interactions[k].ft + Interactions[k].ftb) * Li;
+    Particles[j].moment -= (Interactions[k].ft + Interactions[k].ftb) * Lj;
 
     // Internal stress
     Sig.xx += f.x * branch.x;
     Sig.xy += f.x * branch.y;
     Sig.yx += f.y * branch.x;
     Sig.yy += f.y * branch.y;
-    
+
   } // Loop over interactions
 }
